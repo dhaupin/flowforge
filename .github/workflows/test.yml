@@ -1,0 +1,97 @@
+name: test
+
+# The shell's push/PR battery: every gate that exists today runs on every
+# change, and the family tooling is wired BEFORE the first real pack so the
+# first pack manifest someone drops in is linted on push, not discovered
+# broken at release time.
+#
+# Family slots on this battery (adopted posture: empty = vacuous green,
+# never false-red; a slot wakes the day its input exists):
+#   packstruct - WIRED. Manifest lint over packs/ (empty shell -> 0 packs
+#     checked, exit 0; the first pack.json is gated from its first commit).
+#   crashtest  - WIRED-WHEN-READY. The step arm-gates on
+#     crashtest.config.js existing (hashFiles) because `crashtest run`
+#     without a config is a hard exit 2, not a pass - a shell with no
+#     handlers/scripts to attack keeps the step parked instead of fake-red.
+#   poststruct - TBA POST. Check-profile host (packstruct README links it);
+#     the repo is a README + parked horcrux archive today. Wake condition:
+#     a published packstruct check-profile CLI or the first check-profile
+#     pack in packs/public/ - put its install + run beside the pin rows in
+#     MANIFEST.md (pin moves = MANIFEST row in the SAME commit).
+#   eyestruct  - TBA. Not a product yet (README-only repo). No CLI to pin.
+#     Same wake-condition rule as poststruct; anything wired before a CLI
+#     exists would be theater, and the battery never ships theater.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  battery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The five scripts/ gates compile then run (frontmatter, links, style,
+      # fiction signatures, Liquid filters). Same ritual as the README.
+      - name: Shell gates
+        run: npm run check && npm run lint:docs
+
+      # The landing shell builds through the engine's own gates: prestruct
+      # build, then scripts/repair-404.cjs (the prestruct#33 assert-clean
+      # repair - any leftover $1/$2, missing description, or off-origin
+      # canonical exits 1 and red-lights this job).
+      - name: Install web deps
+        run: npm install --prefix web --no-audit --no-fund
+
+      - name: Web build
+        run: npm run build --prefix web
+
+      # Jekyll build of docs/ (PR coverage the docs-deploy lane doesn't give -
+      # that workflow runs on main pushes only). Ruby deps ride the Gemfile;
+      # bigdecimal is declared there on purpose (Ruby 3.4 bundled gem).
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: './docs'
+
+      - name: Docs build
+        run: cd docs && bundle exec jekyll build
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # packstruct lint (issue-adopted from the /packs contract): a manifest
+      # declaring an entry that doesn't ship dies here, at author time.
+      # PINNED to npm 1.0.0 - packstruct's pin convention is the struct
+      # ladder (0.9.x manual, 1.0.0+ tag-published), and bumps move the
+      # MANIFEST.md row in the same commit.
+      - name: Install packstruct (pinned)
+        run: npm install --no-save --no-audit --no-fund packstruct@1.0.0
+
+      - name: packstruct lint packs/
+        run: node node_modules/packstruct/bin/cli.mjs lint packs/ --json
+
+      # crashtest row: armed, but wakes only when the shell has a target.
+      # `crashtest run` with no crashtest.config.js is a hard exit 2 (missing
+      # config = "the run is wrong", never a pass), so the arm gate is the
+      # config's existence. PINNED to npm 1.1.0; bump = MANIFEST.md row in
+      # the same commit. Remove the `if:` lines the day a config lands.
+      - name: Install crashtest (pinned, parked until the config lands)
+        if: ${{ hashFiles('crashtest.config.js') != '' }}
+        run: npm install --no-save --no-audit --no-fund crashtest@1.1.0
+
+      - name: Crashtest the shell
+        if: ${{ hashFiles('crashtest.config.js') != '' }}
+        run: node node_modules/crashtest/bin/crashtest.js run

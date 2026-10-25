@@ -59,14 +59,15 @@ Byte-exact copies were verified with `cmp` at extraction time.
 
 | file                        | receipt                                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------------------- |
-| `docs-deploy.yml`           | extracted from crashtest docs.yml; includes the TOKEN-AUTH pagefind scrape (rate-limit lesson) and the PINNED freestruct install (npm `^1.1.0` since 2026-10-25/issue #3 - was the git-ref pin) |
-| `release.yml`               | template: npm Trusted Publishing (OIDC), no publish tokens, tag-driven                         |
+| `docs-deploy.yml`           | extracted from crashtest docs.yml; includes the TOKEN-AUTH pagefind scrape (rate-limit lesson) and the PINNED freestruct install (npm `^1.1.0` since 2026-10-25/issue #3 - was the git-ref pin) || `release.yml`               | template: npm Trusted Publishing (OIDC), no publish tokens, tag-driven |
+| `test.yml`                  | new (2026-10-25, same-day CI hookup): the shell's push/PR battery - the five scripts/ gates, web build (prestruct + repair-404 assert), docs Jekyll build (PR coverage docs-deploy doesn't give), packstruct lint over packs/ (pinned npm 1.0.0; empty shell = 0 packs checked, exit 0, the first pack.json is gated from its first commit) and a crashtest row ARM-GATED on `crashtest.config.js` existing (crashtest run without a config is a hard exit 2, not a pass - the shell has no handlers to attack yet; remove the `if:` lines the day a config lands). Family posture: poststruct + eyestruct = TBA slots documented in the workflow header (both repos are README/horcrux stubs; no CLI to pin - wiring them before a CLI exists would be theater). |
 
 ## Engine pins (bump = deliberate review)
 
 | engine     | pin                                                  | why                                                                         |
-| ---------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
-| prestruct  | `^1.0.0` (npm; matches the source repo's shipped pin) | the prerender engine - floating = random deploys                            |
+| ---------- | ---------------------------------------------------- | --------------------------------------------------------------------------- || prestruct  | `^1.0.0` (npm; matches the source repo's shipped pin) | the prerender engine - floating = random deploys |
+| packstruct | `1.0.0` (npm; test.yml) | the /packs manifest lint - exact pin; bumps move this row in the same commit |
+| crashtest  | `1.1.0` (npm; test.yml, ARM-GATED on crashtest.config.js) | the adversarial-QA runner - pinned & parked until the shell has a target (no handlers = no config = no run) |
 | freestruct | `^1.1.0` (npm; docs-deploy.yml) - was github `dhaupin/freestruct#dfb30aa498`, moved 2026-10-25 (issue #3): the npm name finally published, and 1.1.0 reorganized `docs/lib/` -> `engine/` + a `bin/freestruct.mjs` shim, so the git-sha install was already pointing at a tree that no longer matches the invocation. Bumped to semantic npm pin the same day the tag shipped; the PINNED lesson stands, only the transport changed. Invoke now: `node node_modules/freestruct/engine/inject.js` (the engine moved out of docs/lib at 1.1.0; the npm package's old docs/lib path is gone). |
 | pagefind   | latest-resolve IN CI, token-authenticated, hard-refused on an unparseable tag | unauthenticated scrapes get rate-limited from shared runner IPs          |
 | actions    | `actions/checkout@v4`, `actions/setup-node@v4`, `upload-pages-artifact@v3`, `configure-pages`/`deploy-pages` as pinned in the copied workflow | |

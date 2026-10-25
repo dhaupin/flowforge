@@ -12,6 +12,53 @@ the next agent should never guess what happened. Conventions live in
 
 ---
 
+### 2026-10-25 - test.yml: packstruct + crashtest wired from start (poststruct/eyestruct TBA slots documented)
+
+- Lead-in receipts, from answering the user's "did we hook packstruct +
+  crashtest into CI?" question: the shell shipped NO family CI (docs-deploy
+  + release only), /packs was the README-contract-only empty state by
+  design, and the packstruct-in-CI + crashtest-dogfood hookups live in the
+  freestruct repo. User asked to wire packstruct + crashtest NOW and
+  carry poststruct + eyestruct ("TBA") from the start too.
+
+- Fact-check before wiring (truth over vibes): poststruct = README +
+  horcrux parked archive + labs stubs (NO product), eyestruct = README
+  only. Both on npm-ready: packstruct@1.0.0, crashtest@1.1.0.
+
+- `test.yml` (new, the shell's push/PR battery):
+  1. the five scripts/ gates (npm run check + lint:docs),
+  2. web build through the ENGINE's own gates (prestruct build + the
+     repair-404 assert-clean step - so a prestruct#33-class leak also
+     red-lights CI, not just deploys),
+  3. docs Jekyll build (PR coverage docs-deploy's main-push-only lane
+     doesn't give),
+  4. packstruct lint over packs/ - PINNED npm 1.0.0, vacuous green
+     proven locally ("0 pack(s) checked", exit 0) on the empty-shells
+     state; the first pack.json is gated from its FIRST commit,
+  5. crashtest row ARM-GATED on crashtest.config.js existing (checked
+     upstream first: `crashtest run` with no config is a hard EXIT 2,
+     never a pass - the shell has no handlers/scripts to attack yet, so
+     the step parks with pinned crashtest@1.1.0 instead of fake-red;
+     remove the `if:` lines the day a config lands).
+
+- poststruct + eyestruct: explicitly NOT wired, wired = theater with no
+  CLI to pin. Both live as documented TBA slots in the workflow header
+  with individual wake conditions (poststruct: published check-profile
+  CLI or first check-profile pack in packs/public/; eyestruct: same rule
+  once it exits README-only). Pins never float: any future bump moves
+  the MANIFEST row in the same commit (workflow header says so too).
+
+- Local verify before push: js-yaml parse of test.yml OK, npm run
+  lint:docs PASS, npm install+build --prefix web = 3/3 pages +
+  REPAIR-404 PASS, packstruct lint packs/ = 0 packs / exit 0. CI run
+  proves the rest (watched the run for the docs/Ruby leg which has no
+  local equivalent on this host - no Ruby here).
+
+- Receipts: MANIFEST.md (test.yml row + packstruct/crashtest pin rows,
+  crashtest marked arm-gated). Open asks: none new.
+
+---
+
 ### 2026-10-25 - freestruct 1.1.0 precursor close-out (issue #3: trim + pin bump, landed the same day the tag shipped)
 
 - New tracker item flowforge#3 (filed by the freebuff-web bot) turned out
