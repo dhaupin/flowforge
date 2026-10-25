@@ -72,6 +72,15 @@ the next agent should never guess what happened. Conventions live in
   1.1.0. Receipts: MANIFEST.md (Gemfile, layout-trim, template-trim
   rows; freestruct pin row moved to npm semver).
 
+- Open asks (carry forward): the docs BRANDING homework is still open
+  and now twice-visible in the head - layout title suffix ("Your Site /
+  Your Site" renders as the h1-title while og:title carries it into
+  search results too) + page frontmatter titles on the sample pages.
+  The engine surface itself is correctly flowforge-branded (og:site_name
+  = flowforge, canonical/og:url = docs.creadev.org/flowforge,
+  SoftwareApplication name = flowforge). One round: swap the layout
+  title line + index.md frontmatter to flowforge truth.
+
 ---
 
 - The archived rig extraction landed: verified the parked seed archive
