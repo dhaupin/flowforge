@@ -1,12 +1,12 @@
 {
-  "name": "your-site",
+  "name": "flowforge-site",
   "private": true,
   "version": "0.9.0",
   "type": "module",
-  "description": "your site - the flowforge shell (prestruct prerender + static hosting)",
+  "description": "flowforge site - the shell the struct family ships from (prestruct prerender + static hosting)",
   "scripts": {
     "dev": "vite",
-    "build": "prestruct build",
+    "build": "prestruct build && node scripts/repair-404.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

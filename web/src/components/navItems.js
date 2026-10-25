@@ -10,9 +10,8 @@
 export const NAV_ITEMS = [
   // primary app routes - drop in yours
   { label: 'Home', to: '/', end: true, group: 'site' },
-  { label: 'About', to: '/about', group: 'site' },
   // outbound surfaces
-  { label: 'GitHub', href: 'https://github.com/your-org/your-site', group: 'out' },
+  { label: 'GitHub', href: 'https://github.com/dhaupin/flowforge', group: 'out' },
 ]
 
 /**

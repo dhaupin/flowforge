@@ -48,6 +48,70 @@ the next agent should never guess what happened. Conventions live in
   DEPLOY.md (CF-Pages shape), and the OIDC release template when there is
   an artifact to release.
 
+### 2026-10-25 - web surface round (CF Pages live at flowforge.creadev.org)
+
+- CF Pages first build: green (9 assets uploaded, 5 header rules parsed, 0
+  redirect rules). From the deploy log + the user's screenshots, six unpack
+  -audit items: leaked raw text on the 404, missing favicon/PNG wiring,
+  TWO different 404 experiences, a doubled brand logo, missing syntax-tint
+  class usage, unstyled CTAs, and a dead About nav route.
+
+- 404 root cause (items 1/2/4 of the audit in one): prestruct's engine
+  `generate404()` uses FUNCTION replacers whose return strings still carry
+  literal `$1/$2`. A string replacer expands those group references; a
+  function replacer inserts them LITERALLY - so the description/og:title/
+  twitter:title/canonical tags get consumed and ship as leaked text that
+  the browser hoists into the body (visibly, above the styled page).
+  Verified live on crashtest.creadev.org's 404 and reproduced from the npm
+  1.1.0 source - still unfixed upstream at crashtest main. Flowforge-side
+  fix: `web/scripts/repair-404.cjs` rebuilds the four tags from
+  ssr.config truth, then ASSERTS the repair (any leftover `$1`/`$2`, a
+  missing description, or a canonical not on the configured origin exits
+  1). Wired after `prestruct build` in web package.json so CF runs it too
+  (CF's command is `npm run build` in web/). Also added the `notFound`
+  block to ssr.config (heading/body/CTA = the SPA NotFound copy) and
+  rebuilt pages/NotFound with the matching `.nf` + `.btn` shape, so the
+  host-served 404 and the hydrate-rendered 404 read as ONE page, not two
+  "types".
+- favicon/PNG set: the 404 render keeps the build-time-injected shell head,
+  so the favicon links were already there - the missing piece was the PNG
+  files themselves (icon-192/512, favicon-32, apple-touch-icon, og-image
+  were all 404ing). Generated from our own placeholder `icon.svg`,
+  deterministically, out-of-tree (no rasterizer dep committed). NOTHING
+  copied from crashtest's PNGs - their mark is brand data and stays
+  per-repo. Receipts in [../MANIFEST.md](../MANIFEST.md).
+- doubled logo (item 2): the genericizing cut pasted TWO
+  `<img className="brand-logo">` rows into Nav.jsx; back to one. Brand text
+  to `<accent>flow</accent>forge`, GitHub href to `dhaupin/flowforge`.
+- CTA + syntax classes (items 3+4): styles.css never lacked `.btn`/`.code`
+  rules - the cut pages had the WRONG class names (`.hero-actions` div +
+  bare `.btn-primary` modifiers). Home went to crashtest's fixed shape:
+  `.hero`/`.cta-row` and COMPOSED classes (`.btn` + `.btn-primary/-ghost`;
+  the base class carries the geometry, ours rendered as default links),
+  and the `.code` pre uses `.k` spans on commands like the docs Rouge
+  output. Repo/docs CTAs point at the real dhaupin/flowforge +
+  docs.creadev.org/flowforge/ surfaces (the old /docs/ href 404ed).
+- terms/privacy pages (item 5): blank h1 placeholders at /terms + /privacy
+  (filled-in family examples live in crashtest web/pages), routes in
+  AppLayout + ssr.config entries (0.3 priority, yearly changefreq), head
+  metas via usePageMeta.
+- About removed from navItems (item 6) - the route led nowhere.
+- React #321 receipt from crashtest, transcribed: the head-tag hook must
+  live in the component BODY (hook-in-effect was an invalid hook call and
+  tore the tree down on their live site); Terms/Privacy/Home call
+  usePageMeta in-body now.
+- CF-log warnings fixed: the `Invalid value for prop className on <a>`
+  prerender warning came from the sidebar LEGAL links - plain `<Link>`
+  spreads className straight onto the `<a>` and a function className there
+  warns (NavLink handles function classNames, Link does not, react-router
+  -dom v6.23) - those links carry no className now; plus the canonical
+  placeholder (`your-site.example.com`) died with the ssr.config identity
+  swap (siteUrl https://flowforge.creadev.org), and web/package.json got
+  its real name (flowforge-site, version 0.9.0 = the version protocol).
+- Open asks (carry forward): the family owes upstream prestruct a repaired
+  `generate404` release - RETIRE the repair script at that pin bump per
+  MANIFEST.
+
 ---
 
 ### 2026-10-24 - 0.9.0 scaffold cut (the shell extracted from crashtest @ 905aa91)

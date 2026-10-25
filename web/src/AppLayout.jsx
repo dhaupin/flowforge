@@ -6,6 +6,8 @@ import { islands }      from './AppIslands.jsx'
 import Nav from './components/Nav.jsx'
 import Footer from './components/Footer.jsx'
 import Home from './pages/Home.jsx'
+import Terms from './pages/Terms.jsx'
+import Privacy from './pages/Privacy.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function ScrollToTop() {
@@ -26,6 +28,8 @@ export default function AppLayout() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           {/* add your routes here, one Route per ssr.config.js entry */}
           <Route path="*" element={<NotFound />} />
         </Routes>

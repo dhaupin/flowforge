@@ -40,7 +40,8 @@ Byte-exact copies were verified with `cmp` at extraction time.
 | `src/styles.css`            | extracted design system; palette values neutralized (token NAMES and structure are the contract, values are your brand) |
 | `public/_headers`, `public/_redirects` | byte-exact copies (CSP + no-SPA-fallback redirect wisdom)                          |
 | `public/icon.svg`           | placeholder (matches docs/icon.svg byte-equal)                                               |
-| `public/site.webmanifest`, `public/robots.txt` | extracted shape; identity genericized; PNG icons left to the adopter (drop icon-192/512/favicon-32/apple-touch-icon + og-image.png into web/public/) |
+| `public/icon-192.png`, `icon-512.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png` | generated (unpacked-day 2, 2026-10-25): rasterized from `public/icon.svg` via @resvg-js OUT-OF-TREE (no rasterizer dep committed); og-image is the token composition (paper + line frame + the mark + wordmark) - making the webmanifest/favicon links stop 404ing. CRASHTEST'S PNGs were NOT imported (brand data stays per-repo). |
+| `scripts/repair-404.cjs`    | new (unpacked-day 2, 2026-10-25, flowforge-authored): UPSTREAM prestruct bug receipt - engine `generate404()` uses function replacers whose return strings carry literal `$1/$2`, which function form does NOT expand (string replacers do). Whole description/og:title/twitter:title/canonical tags get consumed and ship as leaked text the browser hoists into the body (live on crashtest.creadev.org 404 too - the family owes upstream a fix; RETIRE this script at the bump). Rewrites the four tags from ssr.config truth + ASSERTS clean (no `$1/$2`, exactly one description, canonical on origin); wired AFTER `prestruct build` in web build. |
 
 ## scripts/ (the docs gates)
 

@@ -1,11 +1,11 @@
 {
-  "name": "Crashtest",
-  "short_name": "crashtest",
-  "description": "Adversarial QA for agent-built apps - seeded, in-process attacks, hardening ledger for CI.",
+  "name": "flowforge",
+  "short_name": "flowforge",
+  "description": "The shell the struct family ships sites from: landing + docs + CI/release plumbing, brand as data.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#100d0a",
-  "theme_color": "#100d0a",
+  "background_color": "#10131a",
+  "theme_color": "#10131a",
   "lang": "en",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

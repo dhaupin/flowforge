@@ -21,7 +21,7 @@ export default function Footer() {
             ? <Link key={i.label} to={i.href}>{i.label}</Link>
             : <a key={i.label} href={i.href} target="_blank" rel="noreferrer">{i.label}</a>
         ))}
-        <span>Made by <a href="https://your-site.example.com" rel="noopener" className="madeby">your org</a></span>
+        <span>Made by <a href="https://creadev.org" target="_blank" rel="noopener" className="madeby">Rook @ Creadev.org</a></span>
       </div>
     </footer>
   )
