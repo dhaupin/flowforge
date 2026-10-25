@@ -1,5 +1,5 @@
 ---
-permalink: discussions/index.md
+permalink: discussions/
 layout: default
 title: Release Posts
 description: The release-post system - one announcing-vX.Y.Z.md per release, discussions-ready, lint-gated like every other docs surface.

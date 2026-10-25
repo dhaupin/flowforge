@@ -1,5 +1,5 @@
 ---
-permalink: index.md
+permalink: /
 layout: default
 title: Your Site
 description: Plain two-sentence description of your project - this page proves the docs rig builds, searches, and highlights.
