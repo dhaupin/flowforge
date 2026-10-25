@@ -12,7 +12,55 @@ the next agent should never guess what happened. Conventions live in
 
 ---
 
+### 2026-10-25 - docs branding + token reconciliation round (parity with web)
+
+- The user spotted the asymmetric branding: web got the flowforge identity
+  in its first rounds while docs still carried placeholder everywhere.
+  Parity audit found and closed, in docs/_layouts/default.html +
+  docs/index.md:
+
+- Identity (5): header brand text `your`site -> `flow`forge; header +
+  footer GitHub hrefs your-org/your-project -> dhaupin/flowforge;
+  the doc-footer four-link placeholder row -> "flowforge is open source
+  - site flowforge.creadev.org - terms - privacy - part of the Creadev
+  family" (family-shape, credit to freestruct's footer for the
+  conventions-index wording); layout title line "Your Site Docs" /
+  "Your Site" -> `{{ page.title | default: "flowforge docs" }} |
+  flowforge` (the `Your Site / Your Site | flowforge` og:title that the
+  head trim started exposing into search results dies here - the open
+  ask logged in the issue #3 precursor entry CLOSES); index.md
+  identity -> title `flowforge docs` + real description while KEEPING
+  all three instructional body sections (highlight sample, build
+  commands, sidebar-nav doc) intact - a first overwrite dropped them,
+  caught in the diff before commit and restored.
+
+- Token reconciliation (the drift the audit found beyond identity):
+  docs-layout `--surface` dark #0d1017 -> #161b24 and `--accent-deep`
+  -> dark #5166c7 / light #33449e, both aligned to the WEB styles.css
+  sheet as the one brand truth. Family receipt first (adopt honestly,
+  not from vibes): freestruct's adapted default.html carries ITS
+  palette's values (#4055c5/#2f44b8, what our last round transcribed)
+  and crashtest's own docs layout has the same UNDECLARED accent-deep
+  its web half declares - so the value is adopter brand data, not
+  engine data, and flowforge's web sheet is the adopter truth here.
+  Docs keeps its --ink-light alias + layout dims (header-height/
+  sidebar-width) and web keeps --nav-bg/--accent-contrast - surface
+  roles differ, values now don't.
+
+- Verified: lint:docs PASS (frontmatter 2 pages, links, style, fiction
+  now scanning 29 files, filters). The Jekyll + engine build is proven
+  by the CI docs-deploy + test battery on this push (no local Ruby);
+  live-check after deploy: header brand, footer links, layout title, and
+  og:title = "flowforge docs | flowforge".
+
+- Note (unchanged, documented homework): docs og.image still deliberately
+  absent (the PNG set is web-side truth; an og:image pointing at a 404
+  is worse than none until the docs PNG set lands).
+
+---
+
 ### 2026-10-25 - test.yml: packstruct + crashtest wired from start (poststruct/eyestruct TBA slots documented)
+
 
 - Lead-in receipts, from answering the user's "did we hook packstruct +
   crashtest into CI?" question: the shell shipped NO family CI (docs-deploy
