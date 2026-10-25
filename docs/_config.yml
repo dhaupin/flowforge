@@ -3,8 +3,8 @@
 # settings: kramdown + rouge (the code-block highlighter the shared token CSS
 # colors), permalink style, and the pagefind exclude list.
 title: Your Site
-baseurl: "/project" # set to the path your docs deploy under (e.g. GitHub Pages project path)
-url: "https://your-site.example.com"
+baseurl: "/flowforge" # the flowforge docs deploy path (GitHub Pages project path)
+url: "https://docs.creadev.org"
 description: Plain two-sentence description of your project.
 
 markdown: kramdown

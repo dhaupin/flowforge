@@ -6,7 +6,7 @@
 # with docs/_config.yml when you brand the rig (they cover the same values).
 site:
   name: Your Site
-  url: https://your-site.example.com/project
+  url: https://docs.creadev.org/flowforge
   description: Plain two-sentence description of your project.
 twitter:
   card: summary_large_image

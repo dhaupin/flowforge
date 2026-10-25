@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const DOCS = path.resolve(__dirname, '..', 'docs');
-const SITE_PREFIX = '/project'; // set to YOUR docs baseurl (mirror docs/_config.yml)
+const SITE_PREFIX = '/flowforge'; // the docs baseurl - mirror docs/_config.yml
 // normalize: leading slash, no trailing slash ('' -> '/')
 const norm = (s) => {
   s = '/' + String(s).replace(/^\/+|\/+$/g, '');
