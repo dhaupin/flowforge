@@ -12,6 +12,53 @@ the next agent should never guess what happened. Conventions live in
 
 ---
 
+### 2026-10-25 - family reqs round: filed upstream, two blocked on repo access
+
+- User asked for any issues/reqs we hold to go upstream. Duplicate-checked
+  all five trackers first, hard-verified the two candidate bugs before
+  filing (one candidate DIED on verification: freestruct's audit exit
+  code is CORRECT - exit 1 on ok:false, my earlier misread was pipe
+  contamination through `head`; and /terms is fully prerendered with
+  proper head tags, so no prestruct ask either). Filed:
+
+- **freestruct#28** (new): audit per-page config-gated warns collapse -
+  og:image/twitter:image-absent lines are identical on every page
+  (verified: 2 pages = 2x2 lines, 4 pages = 4x2), config-shaped not
+  page-shaped; ask = one `(config): ... - N page(s) affected` line,
+  keep per-page for genuinely page-shaped classes (title/description
+  length). Precedent cited: prestruct's validateConfig/formatDiagnostics
+  collapse. Filed with the full terminal receipts.
+
+- **crashtest#37** (new): proposal for an opt-in vacuous-green
+  (`--allow-vacuous`) so shells in the pre-handler lifecycle state can
+  keep the pinned install + CI row LIVE instead of hashFiles-parked
+  (exit 2 stays the default; flag prints one honest "0 handlers, 0
+  attacks" line). flowforge is first adopter on ship - deletes our two
+  `if:` lines + the workflow comment.
+
+- **packstruct#13 comment: BLOCKED** - the Freebuff GitHub App gets
+  `Resource not accessible by integration (addComment)` on dhaupin/
+  packstruct; this is the known access gap, documented as crashtest#18
+  ("reconnect poststruct + packstruct to the Freebuff GitHub App (both
+  403; blocker is repo access only)"). Content banked below until access
+  lands: our CI run 40236634491 is the second live instance of the
+  confusing-root-message class (packs//public/ double slash + the real
+  fix being a packs/public/.gitkeep commit since git does not track
+  empty dirs) - add as a #13 comment + message-improvement note.
+
+- **poststruct / eyestruct: filed NOTHING, honestly** - poststruct has a
+  live queue but nothing flowforge-shaped to add (its check-profile CLI
+  doesn't exist; our TBA wake-conditions already cite it); eyestruct is
+  an empty README stub. eyestruct also blocked by the same App access
+  gap, so even convention pulls would 403. Revisit both when they ship a
+  surface.
+
+- Housekeeping for whoever next holds the keys: when packstruct/
+  poststruct/eyestruct are granted to the App, this entry's banked
+  packstruct#13 comment is the only outstanding delivery.
+
+---
+
 ### 2026-10-25 - docs branding + token reconciliation round (parity with web)
 
 - The user spotted the asymmetric branding: web got the flowforge identity
