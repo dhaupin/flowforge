@@ -48,11 +48,25 @@ the next agent should never guess what happened. Conventions live in
   once it exits README-only). Pins never float: any future bump moves
   the MANIFEST row in the same commit (workflow header says so too).
 
+- CI CAUGHT the first mark, same commit (the battery earning its keep
+  one run in): the first CI run red-lit packstruct lint with
+  "missing packs//public/ - packs live at <packs-root>/public/<name>/""
+  - the shell NEVER committed packs/public/ (empty dirs don't track,
+  and the cut only shipped packs/README.md + packs/.gitignore) while
+  my local pre-push probe ran in a scratch tree that HAD created
+  packs/public manually - masking the defect. Fix: packs/public/.gitkeep
+  committed so the tracked tree carries the contract shape; packstruct
+  re-run locally against the REAL repo tree: 0 packs / exit 0.
+  FICTION CLASS (first catch, so no new gate per house law - second
+  catch mints one): "a verification run in a constructed fixture can
+  pass for the repo; run the pre-push probe against the REAL tree".
+
 - Local verify before push: js-yaml parse of test.yml OK, npm run
   lint:docs PASS, npm install+build --prefix web = 3/3 pages +
-  REPAIR-404 PASS, packstruct lint packs/ = 0 packs / exit 0. CI run
-  proves the rest (watched the run for the docs/Ruby leg which has no
-  local equivalent on this host - no Ruby here).
+  REPAIR-404 PASS. CI run (40236634491) proved the other legs: all
+  gates, web build, Ruby/Jekyll docs build green first try; after the
+  .gitkeep fix, packstruct also joins. crashtest rows skipped as
+  designed (no crashtest.config.js yet).
 
 - Receipts: MANIFEST.md (test.yml row + packstruct/crashtest pin rows,
   crashtest marked arm-gated). Open asks: none new.
