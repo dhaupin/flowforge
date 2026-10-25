@@ -1,0 +1,14 @@
+# freestruct config - consumed by the SEO post-build layer in
+# .github/workflows/docs-deploy.yml (pinned install, dfb30aa498).
+# Discovery: repo-root cwd -> docs/freestruct.config.yml. site.name and
+# site.url are required; everything else has a working default.
+# Placeholders feed docs/_freestruct/inject-brand.html - mirror the identity
+# with docs/_config.yml when you brand the rig (they cover the same values).
+site:
+  name: Your Site
+  url: https://your-site.example.com/project
+  description: Plain two-sentence description of your project.
+twitter:
+  card: summary_large_image
+og:
+  image: https://your-site.example.com/og-image.png
