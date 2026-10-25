@@ -2,10 +2,10 @@
 # deployed struct-family docs). Replace the identity values, keep the engine
 # settings: kramdown + rouge (the code-block highlighter the shared token CSS
 # colors), permalink style, and the pagefind exclude list.
-title: Your Site
+title: flowforge
 baseurl: "/flowforge" # the flowforge docs deploy path (GitHub Pages project path)
 url: "https://docs.creadev.org"
-description: Plain two-sentence description of your project.
+description: The shell the struct family ships new sites from - the landing + docs rig + CI/release plumbing, with brand as data.
 
 markdown: kramdown
 highlighter: rouge

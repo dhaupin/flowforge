@@ -1,5 +1,6 @@
 # Starter docs nav (freestruct menu layer format - same shape the struct
-# family ships). URLs ride your baseurl (docs/_config.yml, default /project).
+# family ships). URLs ride the deployed baseurl, value-for-value with
+# docs/_config.yml (deployed: /flowforge).
 #
 # This starter links ONLY pages the shell actually ships. Replace it with
 # your own groups as your pages land - commented rows show the shape.
@@ -7,9 +8,9 @@
 - title: Getting Started
   items:
   - title: Overview
-    url: /project/
+    url: /flowforge/
   - title: Release Posts
-    url: /project/discussions/
+    url: /flowforge/discussions/
 
 # Exemplar rows (shape reference - point them at real pages when you have them):
 #  - title: Reference

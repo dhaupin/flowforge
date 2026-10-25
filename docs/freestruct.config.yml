@@ -5,10 +5,12 @@
 # Placeholders feed docs/_freestruct/inject-brand.html - mirror the identity
 # with docs/_config.yml when you brand the rig (they cover the same values).
 site:
-  name: Your Site
+  name: flowforge
   url: https://docs.creadev.org/flowforge
-  description: Plain two-sentence description of your project.
+  description: The shell the struct family ships sites from - landing + docs rig + CI/release plumbing, with brand as data.
 twitter:
   card: summary_large_image
-og:
-  image: https://your-site.example.com/og-image.png
+# og.image deliberately omitted until the PNG set lands (og-image.png is
+# documented adopter homework in MANIFEST.md) - an og:image pointing at a
+# 404 is worse than none, and the pinned freestruct dropped the tag.
+# Template consumed by the layer: docs/_freestruct/inject-brand.html.
