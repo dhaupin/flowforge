@@ -1,15 +1,37 @@
 <!-- freestruct SEO template - flowforge shell edition.
-     The Jekyll layout (_layouts/default.html) already emits canonical,
-     og:title/description/url/type/site_name, so this template adds ONLY the
-     layer the layout lacks - keeping inject output dupe-free:
-       twitter card + title, an og:image, and one SoftwareApplication JSON-LD.
-     Placeholders honored: {{siteUrl}}, {{siteName}}, {{siteDescription}}. -->
+     Trimmed-head contract (issue #3, freestruct 1.1.0): the Jekyll layout
+     emits title + description ONLY, so this template now carries the WHOLE
+     engine surface the layout dropped - canonical + the og:title /
+     og:description / og:url / og:type / og:site_name set (per-page
+     placeholders) - instead of being dupe-free against a baked head.
+     og:image ships only when the config's og.image lands (documented
+     adopter homework; the engine strips the line when empty). Our extras
+     kept from the crashtest cut: the SoftwareApplication JSON-LD + the
+     Organization author identity (the `{{siteAuthor}}` placeholder was
+     never a supported substitution - see MANIFEST receipt).
+     Placeholders honored: {{pageTitle}}, {{pageDescription}}, {{pageUrl}},
+     {{canonicalUrl}}, {{siteUrl}}, {{siteName}}, {{siteDescription}},
+     {{twitterCard}}, {{ogImageFull}}, {{ogType}}, {{ogLocale}}. -->
 
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{siteName}} Docs">
-<meta name="twitter:description" content="{{siteDescription}}">
-<meta property="og:image" content="{{ogImage}}">
+<meta name="description" content="{{pageDescription}}">
+<link rel="canonical" href="{{canonicalUrl}}">
 
+<!-- Open Graph -->
+<meta property="og:title" content="{{pageTitle}}">
+<meta property="og:description" content="{{pageDescription}}">
+<meta property="og:url" content="{{pageUrl}}">
+<meta property="og:site_name" content="{{siteName}}">
+<meta property="og:type" content="{{ogType}}">
+<meta property="og:locale" content="{{ogLocale}}">
+<meta property="og:image" content="{{ogImageFull}}">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="{{twitterCard}}">
+<meta name="twitter:title" content="{{pageTitle}}">
+<meta name="twitter:description" content="{{pageDescription}}">
+
+<!-- JSON-LD (SoftwareApplication shape from the crashtest cut; the
+     Organization author identity rides config author data) -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -24,5 +46,5 @@
 }
 </script>
 
-<!-- injected by freestruct: https://github.com/dhaupin/freestruct (PINNED
-     install in the deploy workflow - never float a github:-install) -->
+<!-- injected by freestruct: https://github.com/dhaupin/freestruct (npm
+     semver pin ^1.1.0 since issue #3 - the PINNED lesson stands) -->

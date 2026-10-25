@@ -12,7 +12,67 @@ the next agent should never guess what happened. Conventions live in
 
 ---
 
-### 2026-10-25 - rig unpacked to main (onboarding issue #2, with issue #1 convention pulls)
+### 2026-10-25 - freestruct 1.1.0 precursor close-out (issue #3: trim + pin bump, landed the same day the tag shipped)
+
+- New tracker item flowforge#3 (filed by the freebuff-web bot) turned out
+  to be a DO-IT-TODAY, not a queue item: freestruct's 1.1.0 tag was
+  already on the repo + npm by the time we looked (dhaupin/freestruct
+  tags: v1.0.0 @ 1e71a66, v1.1.0 @ 473318e00; npm serves 1.1.0). Two
+  asks, both landed now, plus two ride-alongs.
+
+- **Layout head trim** (docs/_layouts/default.html, transcribed from
+  freestruct's own adapted copy @ 4e1facc): the baked
+  canonical/og:title/og:description/og:url/og:type/og:site_name block is
+  gone; the layout keeps title + description (SSG-owned frontmatter
+  facts) + favicon/color-scheme and the per-page
+  `{% if page.noindex %}` robots line (missing-only engine respects an
+  existing robots meta, so noindex pages keep their gate). freestruct's
+  audit grades zero consumer rows now.
+
+- **Template retro-fit** (docs/_freestruct/inject-brand.html): with the
+  layout trimmed, our dupe-free-from-crashtest-cut template no longer
+  matches reality (it carried ONLY twitter/og:image/JSON-LD against the
+  old baked head - those tags would've been owned by nobody). Now
+  carries the full per-page engine set (canonical + og:title/
+  description/url/type/site_name/locale via the engine's {{pageTitle}}/
+  {{pageUrl}}/{{canonicalUrl}} placeholders - the same shape freestruct's
+  own docs template carries), with our extras kept (SoftwareApplication
+  JSON-LD + Organization author from the {{siteAuthor}}-fix receipt,
+  twitter set unchanged). og:image still intentionally absent until the
+  PNG set lands - the engine strips the line when no image is
+  configured (verified live, the line vanishes), so no 404 bait.
+
+- **Pin bump** (docs-deploy.yml): `github:dhaupin/freestruct#dfb30aa498`
+  -> `freestruct@^1.1.0` npm, and the invocation
+  `node node_modules/freestruct/docs/lib/inject.js` -> `node
+  node_modules/freestruct/engine/inject.js` (1.1.0 reorganized docs/lib
+  -> engine/, added a bin/freestruct.mjs shim; the old docs/lib path is
+  GONE in the npm package - contents API 404s at the tag). Contract
+  verified engine-side @ v1.1.0: config still discovered walking up from
+  cwd, output defaults to docs/_site next to the config, positional
+  override + --strict unchanged. Local smoke run (npm 1.1.0 engine,
+  scratch tree with our config + template + a trimmed-head shape page):
+  exit 0, og/canonical fills are per-page, twitter + JSON-LD present,
+  no og:image (stripped), missing-only left the pre-existing description
+  alone, rerun dedupes the injected region.
+
+- Ride-alongs from the same walk, landed with it: `bigdecimal ~> 3.1`
+  into docs/Gemfile (a BUNDLED gem on Ruby 3.4 that liquid 4.0.4 needs;
+  the day a Gemfile.lock gets committed, CI goes dark without it), and
+  `--accent-deep` declared in docs/_layouts/default.html BOTH themes
+  (the Rouge .no/.mi/.mf/.mh rules referenced it while :root never
+  declared it - two raw-highlight classes rendered colorless since the
+  extraction; freestruct's adapted copy fixes it upstream, so we took
+  it with receipts).
+
+- Known-not-run locally: `bundle exec jekyll build` (no Ruby on this
+  host) - the Jekyll build of the trimmed layout is proven by the CI
+  docs-deploy run on this push instead; everything engine-side and
+  everything against the assembled head shape ran locally against npm
+  1.1.0. Receipts: MANIFEST.md (Gemfile, layout-trim, template-trim
+  rows; freestruct pin row moved to npm semver).
+
+---
 
 - The archived rig extraction landed: verified the parked seed archive
   byte-for-byte first (`sha256 horcrux/flowforge.tar.gz` =
@@ -108,9 +168,13 @@ the next agent should never guess what happened. Conventions live in
   placeholder (`your-site.example.com`) died with the ssr.config identity
   swap (siteUrl https://flowforge.creadev.org), and web/package.json got
   its real name (flowforge-site, version 0.9.0 = the version protocol).
-- Open asks (carry forward): the family owes upstream prestruct a repaired
-  `generate404` release - RETIRE the repair script at that pin bump per
-  MANIFEST.
+- Open asks (carry forward): upstream prestruct#33 (generate404 function
+  replacers emit literal $1/$2, opened 2026-10-23, root-fix proposal in
+  prestruct#42) - RETIRE the repair script at the pin bump that carries
+  that fix, per MANIFEST. Filed the adjacent freestruct latent as
+  freestruct#24 (config-carried values riding string-form replace() in
+  purge commands + head/body insertions; template core itself is split/join
+  safe) - tag along a retire-note there too when both upstream fixes land.
 
 ---
 

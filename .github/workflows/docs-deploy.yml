@@ -6,9 +6,10 @@ name: Deploy Docs
 # pagefind scrape + the PINNED freestruct install are the two receipts this
 # rig keeps for you: unauthenticated api.github.com scrapes get rate-limited
 # from shared runner IPs (an empty VERSION yields a malformed asset URL and
-# tar fails on the 404 HTML body), and an unpinned github:-install is a
+# tar fails on the 404 HTML body), and a floating github:-install is a
 # random deploy (freestruct reorganized docs/lib mid-day once - PINNED, the
-# all-caps lesson is the point).
+# all-caps lesson is the point). Pin rides npm semver since 1.1.0
+# (issue #3), when the npm registry name finally shipped.
 
 on:
   push:
@@ -79,23 +80,23 @@ jobs:
         run: ./pagefind --site _site
 
       # freestruct consumes, relative to the REPO ROOT:
-      #   docs/ssr-config.yml (config) / docs/_freestruct/inject-brand.html
-      #   (template) / docs/_site (output; default arg)
-      # Install from the GitHub source tarball - the npm registry name is
-      # not published yet, and the package bin lacks a shebang, so invoke
-      # inject.js with node directly (works everywhere; revisit once
-      # freestruct is npm-published with a proper bin).
-      # PINNED to the last commit carrying docs/lib at the documented path:
-      # unpinned github:-installs float to freestruct's default HEAD, which
-      # moved/reorganized docs/lib mid-day on 2026-10-21 (six-centuries
-      # lesson: a floating install is a random deploy), red-lighting the
-      # docs deploys until it got pinned. Bump the pin when freestruct
-      # republishes the layer - never float again.
+      #   docs/freestruct.config.yml (config) / docs/_freestruct/
+      #   inject-brand.html (template) / docs/_site (output default)
+      # npm install - the npm name published 1.0.0 first, 1.1.0 is the
+      # first post-stable surface with the engine/ reorg (docs/lib ->
+      # engine/, bin/freestruct.mjs slim shim). Semantic pin, no float:
+      # the PINNED lesson stands, only the transport changed. Invoke the
+      # engine directly with node (bin/freestruct.mjs forwards to the
+      # same runInject(); node skips any exec-bit / shebang questions).
+      # BOUNDARY: freestruct 1.1.0 is missing-only per tag slot, so the
+      # consumer layout carries title + description and the ENGINE fills
+      # canonical/OG/twitter/JSON-LD/robots - matching the trimmed
+      # _layouts/default.html (issue #3).
       - name: Install freestruct
-        run: npm install --no-save --no-audit --no-fund 'github:dhaupin/freestruct#dfb30aa498'
+        run: npm install --no-save --no-audit --no-fund freestruct@^1.1.0
 
       - name: Run freestruct post-build layer
-        run: node node_modules/freestruct/docs/lib/inject.js
+        run: node node_modules/freestruct/engine/inject.js
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
