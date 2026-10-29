@@ -4,7 +4,18 @@ All notable changes to the flowforge shell. The released version lives in `packa
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https://semver.org/). `packs/<name>/pack.json` manifests carry THEIR OWN semver, independent of the CLI/shell - see [packs/README.md](./packs/README.md).
 
-## Unreleased - staging (2026-10-29)
+## [Unreleased] - staging (2026-10-29)
+
+### The release ladder: adopt eyestruct's 3-job shape (2026-10-29)
+
+Scope: eyestruct's workflows are the fleet template (its CI was updated most recently and its 1.0.0 cut exercised the whole ladder end to end). Adopt its proven release shape here, receipt `dhaupin/eyestruct@4e2b552`.
+
+- `.github/workflows/release.yml` - now the 3-job ladder (publish / release / verify) with a `verify-only` dispatch mode, transcribed from `dhaupin/eyestruct@4e2b552 .github/workflows/publish.yml`. The publish job keeps the OIDC trusted-publishing publish and the 0.x + tag==version gate; the release job cuts the GH release from the tag with notes EXTRACTED from the changelog; the verify job re-proves the cut against npm and the GH release.
+- `lib/release-notes.cjs` - the release-body extractor (identical across the family). Reads the `## [<version>]` section from `CHANGELOG.md` and refuses an absent or empty section, so a release body cannot disagree with the changelog. Fixed over the upstream copy: the newest section is also the last heading on the first cut, so an absent following heading now slices to EOF instead of erroring.
+- `lib/verify-release.cjs` - the post-publish trust ladder (identical across the family): `--npm` asserts registry latest == this tree's version, the served tarball's sha512 == the registry integrity metadata, provenance present, then the full pack ladder on the served tarball; `--gh` asserts the release object exists, targets the tag's commit, and its source tarball diffs clean against `git archive` of that commit. Two local additions over the upstream copy: a named `--allow` prefix list (this shell ships the whole rig on purpose) and a named SKIP when a package declares no `main`/`exports`/`bin` (nothing to load).
+- `tests/release-verify.test.cjs` - the pack ladder run OFFLINE every push (the standing receipt eyestruct carries), so the contents assertions do not live only on release days: a positive case over real `npm pack` output and a negative case refusing a doctored tarball by name.
+- `CHANGELOG.md` - headings normalized to the family's keep-a-changelog shape (`## [Unreleased]`, `## [0.9.0]`) so `lib/release-notes.cjs` can slice the release body.
+- `lib/gates/check-birth-gate.cjs` - the serde check narrowed to git verbs that WRITE a git dir (`init`/`add`/`commit`/`-C`); read-only verbs (`git archive`, `git rev-parse`) never mutate the tree being packed, so the verify-release ladder is not this class.
 
 ### Phase 1 - split tool from site (2026-10-29)
 
@@ -87,7 +98,7 @@ A two-bucket round: adopt the fixes the family's newest repos already paid for (
 
 - Retiring `web/scripts/repair-404.cjs` (issue #42 / #33, the prestruct literal-`$1`/`$2` 404 leak): the root fix - generate the 404 through the injection pipeline, function replacers expanded - is on prestruct `main` as 1.2.0 but is NOT on npm (latest still 1.1.0, which ships the leak; verified: the raw 1.1.0 `404.html` carries four literal `$1`/`$2` bytes, `repair-404` cleans them to zero). The script stays until the pin bump that carries the fix; `web/package.json` still pins `prestruct: ^1.0.0`.
 
-## 0.9.0 - 2026-10-24
+## [0.9.0] - 2026-10-24
 
 The first scaffold: the rig extracted from **dhaupin/crashtest @ 905aa91**, generic-branded, with a receipt table per file ([MANIFEST.md](./MANIFEST.md)). Ready for the first manual npm push + GitHub release (`v0.9.0` tag; the OIDC workflow ships it).
 
