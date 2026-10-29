@@ -515,3 +515,14 @@ The user asked for all three carry-forward options this session. Two landed; one
 
 - No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
 - This closes issue #9 - the rig's docs lane is a versioned call, not a fourth drifted copy.
+
+---
+
+### 2026-10-29 - session: productization PRD (flowforge as a real tool)
+
+Owner asked what actually ships in the npm package and how to make it a system users pull in and run, not a copy-and-hand-edit template. Answered by inspection: `package.json` has no `bin`/`main`/`exports` (nothing runs on install), brand literals are hardcoded across ~18 shipped files in three languages, and the tool shares a tree with its own dogfood deployment. Owner confirmed the direction (full CLI, `example/` folder like prestruct, GH "use this template", npm + GH release on tag like eyestruct) and asked to write it up.
+
+- **`labs/prd-flowforge.md`** (new) - the productization PRD: two-identity model (rig vs site), the `flowforge.config.js` contract, the five verbs (`create`/`sync`/`build`/`check`/`doctor`), the package layout (`bin/` + `lib/` + `templates/site/` + `example/`), the derivation model + brand census gate, the three distribution channels, and four migration phases (Phase 0 brand contract first).
+- **Surveyed monoforge** (`dhaupin/gistory@main:monoforge-staging`) as the sibling precedent: it already ships `bin/forge.mjs`, `src/` verbs (stamp/doctor/lock/cut), `templates/` with `__TOKEN__` substitution, `factory.json`, and a `.monoforge-stamp.json` manifest that scopes the doctor's truth-slot scan. The PRD aligns flowforge's config vocabulary with `factory.json` and records the two ways the tools relate (flowforge as a monoforge provider, or standalone config-compatible - lean: standalone first, provider once the profile is proven).
+- **Receipts read**: eyestruct `publish.yml` (the npm OIDC + GH release + verify ladder the owner asked to mirror) + `scripts/release-notes.cjs` (release notes extracted from the CHANGELOG, refuses empty); prestruct `package.json` + `bin/cli.mjs` + `init/` + `example/` (the layout precedent, and the "we can do it better" note: our example is tool-generated in CI so it cannot drift).
+- Gates green after the add: `npm run lint:docs` PASS (fiction gate now 43 files), `npm run check` PASS. No version bump (0.9.0 = 0.9.0); no code change yet - PRD only, awaiting owner review on the open questions (section 13) before Phase 0.
