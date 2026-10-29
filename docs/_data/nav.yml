@@ -9,6 +9,13 @@
   items:
   - title: Overview
     url: /flowforge/
+
+# The release-post surface rides the menu (issue #15): a full release-post
+# tree hidden from navigation is a surface nobody finds. Label convention:
+# gistory's voice calls this tree "discussions"; the page title is
+# "Release posts" - pick one label and keep it (the layout comment says so).
+- title: Reference
+  items:
   - title: Release Posts
     url: /flowforge/discussions/
 

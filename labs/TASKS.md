@@ -1,10 +1,6 @@
 # labs/TASKS.md - the rolling work log
 
-One file, appended per landing/session, newest last, with receipts (files,
-gates, SHAs). The house law this file serves: **the log is the memory** -
-the next agent should never guess what happened. Conventions live in
-[../AGENTS.md](../AGENTS.md); versioned product changes also get a
-[CHANGELOG.md](../CHANGELOG.md) entry in the same commit.
+One file, appended per landing/session, newest last, with receipts (files, gates, SHAs). The house law this file serves: **the log is the memory** - the next agent should never guess what happened. Conventions live in [../AGENTS.md](../AGENTS.md); versioned product changes also get a [CHANGELOG.md](../CHANGELOG.md) entry in the same commit.
 
 ## Open asks (carry forward until landed)
 
@@ -107,7 +103,6 @@ the next agent should never guess what happened. Conventions live in
 ---
 
 ### 2026-10-25 - test.yml: packstruct + crashtest wired from start (poststruct/eyestruct TBA slots documented)
-
 
 - Lead-in receipts, from answering the user's "did we hook packstruct +
   crashtest into CI?" question: the shell shipped NO family CI (docs-deploy
@@ -372,3 +367,151 @@ the next agent should never guess what happened. Conventions live in
 - First release path (manual, per [../DEPLOY.md](../DEPLOY.md)): bump check
   -> `v0.9.0` tag -> OIDC publish -> GitHub release from the tag with the
   changelog entry as its body.
+
+---
+
+### 2026-10-29 - two-bucket round on `staging` (Buckets A + B)
+
+Branch `staging` off `main` @ df86464 (2026-10-25 "Family reqs round"), clean tree, shallow clone. Version stays 0.9.0 (no tag yet - the census leg holds every surface honest meanwhile). All 29 open issues read via the GitHub REST API (gh CLI unauthenticated -> GITHUB_TOKEN + REST). Receipts gathered from dhaupin/{eyestruct,prestruct,crashtest,freestruct}.
+
+**Bucket A - adopt the fixes the newest family repos already paid for**
+
+- A1 (#16): `web/public/robots.txt` - flowforge crawler policy + sitemap pointer (`https://flowforge.creadev.org/sitemap.xml`).
+- A2 (#7): Rouge/code token parity - `docs/_layouts/default.html` Rouge block expanded (`.cs/.ch` comment rules, `--err` token) and a matching `.code` syntax-token block added to `web/src/styles.css` (same class vocabulary + palette).
+- A3 (#13): mobile table guard - `docs/_layouts/default.html` `.main { min-width: 0 }`; `web/src/styles.css` `table:not(.attacks)` display/overflow guard + `.table-wrap` (transcribed from eyestruct).
+- A4 (#15): `docs/_layouts/default.html` header brand link now `{{ site.baseurl }}/`; `docs/_data/nav.yml` gained a Reference group ("Release posts"); `docs/discussions/index.md` leaned + a flowing-prose note.
+- A5 (#6): `web/src/islands.js` observer guard (`mounted`/`observers`/`observing` WeakSets; `mount()` disconnects its observer) - transcribed from prestruct `engine/src/islands.js`.
+
+**Bucket B - bring the process surfaces up to the family standard**
+
+- B1 (#25): flowing prose. `scripts/unwrap-prose.cjs` transcribed from eyestruct; ran it over README/AGENTS/CHANGELOG/DEPLOY/MANIFEST/labs/docs (no re-wrap); gates green after.
+- B2/B7 (#23/#29): the publish ladder. `package.json` gained `test` + `prepublishOnly` (`npm test && npm run check && npm run lint:docs`); `release.yml` gained a gate refusing 0.x and a tag that disagrees with the packaged version (every github context value reaches the script through env, never inline interpolation).
+- B3 (#22): root `.gitignore` (docs-preview block) + a `DEPLOY.md` out-of-tree local-preview recipe (unpacked Ruby in `$HOME`, shimmed binstubs, `BUNDLE_PATH` outside the repo, build from a scratch copy of `docs/`).
+- B4 (#24): `scripts/ship-from-download.cjs` + `tests/ship-from-download.test.cjs` (21 pass; renamed `.cjs` - the root package is ESM).
+- B5 (#17): `web/scripts/adopt-icons.mjs` (sharp + potrace + resvg -> traced SVG + icon set + authored `brand-mark.json`) and `web/scripts/og-image.mjs` (1200x630 card consuming the mark + `ssr.config.js` identity). Both smoke-tested on synthetic art; generated output reverted (the pipeline is the deliverable, not new icons for the shell).
+- B6 (#10/#11): `docs/_freestruct/inject-brand.html` upgraded to the engine-edition JSON-LD (Organization + WebSite pair, `{{authorJson}}` founder seam, `{{searchActionJson}}` seam); `docs/freestruct.config.yml` gained `author` + `jsonLd` identity. Verified LIVE against the pinned freestruct 1.1.0 engine on a scratch build - the injected head carries the founder Person, the maintainer Person, and the WebSite block.
+- B8 (#12): `scripts/lint-packs.cjs` + `npm run lint:packs` (wrapper verb); `test.yml` routed through it. Verified both paths: exit 2 naming the exact-devDep fix with no install, exit 0 with packstruct 1.0.0 installed.
+- B9 (#5): `scripts/check-birth-gate.cjs` (five checks: workflow YAML parse + duplicate-key refusal, mount independence, gc-safe serde, determinism note, and the pins-never-float rule - every `uses:` must be a 40-hex SHA), wired into `npm run check`; consumes the root `js-yaml` devDep + a committed lockfile.
+- B10 (#6): every action SHA-pinned across `test.yml`, `docs-deploy.yml`, `release.yml` (checkout v7, setup-node v7, ruby/setup-ruby v1.335.0, upload-pages-artifact v5, deploy-pages v5) - the comment names the human tag, the birth-gate's fifth check enforces the 40-hex form, and each SHA was verified to map to its claimed tag via the API.
+- B11 (#28): `tests/census.test.cjs` - the version-truth census leg (root `package.json` is THE version source; `web/package.json` + the README Status line cannot drift). README gained the Status line the leg pins.
+
+**Gates (all run on the branch)**
+
+- `npm ci` -> clean (one root devDep: js-yaml).
+- `npm test` -> 22 pass / 0 fail (census + 21 ship-lane behavior tests).
+- `npm run check` -> PASS (five gate compile checks + birth-gate lane: 3 workflows parsed, 4 checks incl. 9 action refs all SHA-pinned).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters).
+- `npm run lint:packs` -> PASS (packstruct 1.0.0 over packs/, 0 packs checked).
+- `npm install --prefix web && npm run build --prefix web` -> 3/3 pages rendered, REPAIR-404 PASS.
+- freestruct engine smoke test (pinned 1.1.0) -> injected head carries founder + maintainer + WebSite JSON-LD.
+
+**Receipts / SHAs**
+
+- Extraction source receipts (real SHAs, verified via the API at extraction time): dhaupin/eyestruct `scripts/unwrap-prose.cjs` @ 3adda1dc, `scripts/ship-from-download.cjs` @ 9744c768 (+ `tests/ship-from-download.test.js`), `lib/lint-packs.js` @ cd135a91, `web/scripts/make-icons.mjs` @ e4a73ac (introduced 6556225) + `web/scripts/og-image.mjs` @ 33a7c19, `tests/census.test.js` @ 3d8a822 (introduced); the local docs-preview recipe @ 8a194ad + its gitignore block @ ca2f62a; prestruct `engine/src/islands.js` @ 59cb0469; the Rouge full-vocabulary block @ prestruct c915760 and the mobile table guard @ eyestruct 138fda9.
+- Action pins: checkout `3d3c42e5aac5ba805825da76410c181273ba90b1` (v7), setup-node `949feb2413d6458794dcd2491c4babbbce0c15c1` (v7), ruby/setup-ruby `7f797815d8adceb1c412e7abefdd1ab4abc47a5f` (v1.335.0), upload-pages-artifact `fc324d3547104276b827a68afc52ff2a11cc49c9` (v5), deploy-pages `368f82528645a54fb793d4d04e342629a3f51346` (v5).
+
+**Left open (next round candidates)**
+
+- #27 / #29 remainder: poststruct + eyestruct CI slots stay TBA (both are README/horcrux stubs - no CLI to pin yet).
+- #4: the deterministic-pack / pack-twice byte-compare step is noted by the birth-gate but not exercised (the shell ships no packer).
+
+## 2026-10-29 (later) - logo round: the icon pipeline runs on real art (issue #17)
+
+The user supplied brand art at `web/public/brand/flowforge-logo.jpg` (203301 bytes, 2048x2048, moved off the `public/` root into `public/brand/` to match the family convention - eyestruct ships `web/public/brand/`, and the script's own example is `--art public/brand/logo.png`). Ran the pipeline on it and found a real bug inherited from the extraction source.
+
+**The bug: the icon shipped as a photographic negative.**
+
+- `web/scripts/adopt-icons.mjs` builds `inkMask` by setting ink pixels to **255 (white)** on a 0 (black) field, then calls potrace with `blackOnWhite: true`. potrace's `blackOnWhite` means "the input is dark-on-light, trace the DARK pixels" - so it traced the **background frame**, not the mark. The script then fills that frame with the light ink color, and the icon renders as a light tile with a dark mark: the negative of the art.
+- Receipt: upstream `dhaupin/eyestruct` `web/scripts/make-icons.mjs` @ e4a73ac carries the exact same line (`potrace.trace(inkPng, { ..., blackOnWhite: true }, ...)` over the same ink=255 mask), so the class is inherited, not introduced.
+- Proof, not a guess: correlate the traced fill against the ground-truth ink mask. `blackOnWhite: true` -> **-0.999** (perfectly inverted); `blackOnWhite: false` -> **+0.999**. End-to-end, the rendered `icon.svg` correlates with the source art at **-0.648** before and **+0.658** after the fix.
+- Fix: `blackOnWhite: false` (trace the white pixels the mask actually wrote), plus an in-script **polarity guard** - it compares the traced-path bbox to the ink-mask bbox and throws if the paths span the full frame while the mask is inset (exactly the inverted case), so the class cannot return silently. Negative-tested: forcing `true` makes the script exit 1 with the named error.
+- Regenerated the whole set from the real art: `icon.svg` (both faces, byte-equal), `icon-192/512.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png`. Verified orientation (dark tile, transparent rounded corners, light mark, accent ring + horizontal strike) and byte-parity `web/public/icon.svg` == `docs/icon.svg`.
+
+**Also fixed**
+
+- `MANIFEST.md` - the `icon.svg` row had merged with the `index.md` row (a stray `||`); split, and the icon rows now say REAL BRAND ART instead of "placeholder", with the brand-master row and the adoption-fix note on the `adopt-icons.mjs` row.
+- `CHANGELOG.md` - Added entry for the brand master + regenerated set; Fixed entry for the polarity adoption fix.
+
+**Gates (all green on the branch)**
+
+- `npm test` -> 22 pass / 0 fail.
+- `npm run check` -> PASS (five compile checks + birth-gate: 3 workflows, 4 checks incl. 9 SHA-pinned action refs).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters).
+- `npm run build --prefix web` -> 3/3 pages rendered, REPAIR-404 PASS; `dist/brand/flowforge-logo.jpg` ships (adopter brand data, the eyestruct convention).
+
+Version stays 0.9.0 (no bump, no OIDC - the user's manual push comes first).
+
+---
+
+### 2026-10-29 - session: staging branch in CI (c), paint-scheme axis + picker (e), repair-404 blocked (d)
+
+The user asked for all three carry-forward options this session. Two landed; one is honestly blocked on an unpublished upstream fix.
+
+**c - the permanent `staging` branch (issue #30)**
+
+- `.github/workflows/test.yml` - the push trigger is now `branches: [main, staging]`, so the integration branch runs the whole battery (gates, web build, docs build, packstruct, crashtest row), not just `main`. Before this, work could pile up on `staging` with zero CI signal.
+- `.github/workflows/docs-deploy.yml` - push now also fires on `staging` (docs-build validation on the integration branch), and the `deploy` job carries `if: github.ref == 'refs/heads/main'`. This is the #30 point-3 trap: once `staging` is a trigger, the trigger itself no longer keeps staging's content out of production - the job guard does. Without the guard, a push to `staging` would publish.
+- `DEPLOY.md` - new "## 3. The staging branch (issue #30)" section; the following sections renumbered to 4/5/6 (a duplicate `## 4` died in the process).
+- Receipt: the birth-gate re-ran clean after the edits - "BIRTH-GATE: PASS (3 workflow(s) parsed, 4 checks clean)" - so the new trigger/gate survive the YAML-parse + SHA-pin checks.
+
+**e - the paint-scheme axis + palette picker (issues #18 petrol, #19 jade, #20 picker, #21 golden hour)**
+
+- `web/src/styles.css` - a second, orthogonal axis beside light/dark: `html[data-scheme="petrol|golden|jade"]` token blocks that override only the identity tokens (iris stays the default - it IS the base `:root`). Each preset is a FULL palette with a `html[data-scheme=...][data-theme="light"]` half, so light mode always wins inside every scheme. golden/jade share one warm-graphite cast and differ only in the accent trio. No layout class branches - house rule 1 holds.
+- `web/src/theme.js` (new) - the two axes as data: `THEME_KEY`, `SCHEME_KEY`, `SCHEMES`, and `paperFor(scheme, theme)` (the per-scheme paper map the theme-color meta reads). One source for the switch, the picker, the bootstrap, and the gate.
+- `web/src/components/SchemeSwitch.jsx` (new) - a native `<select class="scheme-switch">` beside the light/dark switch; writes `<html data-scheme>`, persists `flowforge-paint-scheme`, re-sets theme-color via `paperFor`. Hydration-safe: the first client render is the deterministic default (matching prerender), and an effect adopts the persisted scheme after mount.
+- `web/src/components/ThemeSwitch.jsx` - now scheme-aware (reads `THEME_KEY`/`paperFor` from `theme.js`).
+- `web/src/components/Nav.jsx` - renders `<SchemeSwitch />` before `<ThemeSwitch />`.
+- `web/index.html` - the no-flash bootstrap applies BOTH axes pre-paint (theme + scheme), so a persisted scheme never flashes the wrong palette.
+- `docs/_layouts/default.html` - the docs rig mirrors the whole axis: the same three `[data-scheme]` token blocks (both halves, `--accent-deep` set in each), the `.scheme-switch` picker + CSS, the two-axis bootstrap, and the change handler persisting the same key. The landing shell and the docs now agree on the palette in every scheme.
+- `scripts/check-theme-parity.cjs` (new) + `tests/theme-parity.test.cjs` (new) - the parity gate (house rule 3: a bug caught twice becomes a gate). It reads `SCHEMES` from `web/src/theme.js` and refuses: a scheme present in only one surface (web styles.css vs docs layout), a scheme missing its light half or `--accent`/`--accent-deep` (the missing-accent-deep bug from #18/#19/#21), or an orphan `[data-scheme]` block the picker does not offer. Names file:line. Wired into `npm run check` and `npm run lint:docs`.
+- Negative-tested, not assumed: deleting jade's light half makes the gate exit 1 naming the file; adding a `bogus` scheme block trips the orphan check; a scheme name inside a CSS comment does NOT (comments are stripped first). The seven behavior tests cover each class, green on the live tree.
+- Browser-verified end to end: served `web/dist`, switched the picker to petrol, confirmed `localStorage["flowforge-paint-scheme"]="petrol"`, reloaded, and sampled the rendered page background - iris dark paper `#10131a` -> petrol dark paper `#0a1113`. The no-flash bootstrap was also unit-simulated: with `{scheme: petrol, theme: light}` it sets `data-scheme=petrol`, `data-theme=light`, and `theme-color=#edf3f2` (petrol's light paper).
+- `web/scripts/adopt-icons.mjs` - documented the #20 art ruling at the source: the mark's accent is baked at generation time and stays the STATIONARY iris default (option a), so dau art never mismatches a runtime scheme switch.
+
+**d - retire `repair-404` (BLOCKED, honestly)**
+
+- The root fix for the literal-`$1`/`$2` 404 leak (prestruct#33, root-fix proposal prestruct#42 - generate the 404 through the injection pipeline so function replacers expand) is on prestruct `main` as **1.2.0** but is **NOT on npm**: `npm view prestruct version` = **1.1.0**, and the 1.1.0 tarball still ships the bug (`init/scripts/prerender.js` lines 426-438: `() => `$1...$2`` function replacers whose returns carry literal `$1`/`$2`). Confirmed on `main` (raw `engine/scripts/prerender.js`): the four 404 text tags now go through the injection pipeline, and the canonical uses a function replacer with a literal-result guarantee.
+- Decision: `repair-404.cjs` STAYS until the pin bump that carries 1.2.0. Retiring it now would ship the leak. No code change; the blocker is recorded in `CHANGELOG.md` under "### Blocked".
+
+**Gates (all green on the branch)**
+
+- `npm test` -> **29 pass / 0 fail** (was 22; +7 parity tests).
+- `npm run check` -> PASS (six compile checks + birth-gate 3 workflows/4 checks + theme-parity PASS).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters, theme-parity).
+- `npm run build --prefix web` -> "[prerender] Done. 3/3 pages rendered."; built CSS carries `[data-scheme=petrol|golden|jade]` plus their `[data-theme=light]` halves.
+
+**House rules**
+
+- No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
+- `MANIFEST.md` - rows updated/added for `theme.js`, `SchemeSwitch.jsx`, the styles.css scheme axis, the two-axis `index.html` bootstrap, the docs-layout scheme row, `check-theme-parity.cjs`, `tests/theme-parity.test.cjs`, and the two workflow rows (also fixed a pre-existing merged `docs-deploy.yml`/`release.yml` row).
+- `CHANGELOG.md` - Added entries for the theme files + presets + gate; a Changed entry for the `staging` branch; a Blocked entry for `repair-404`.
+
+---
+
+### 2026-10-29 - session: issue #9, the docs lane promoted to a reusable workflow
+
+`docs-deploy.yml` was a per-repo one-off and the runbook it encoded had been hand-copied three times (flowforge / gistory / eyestruct) - and the copies had already drifted (Ruby 3.2 vs 3.4, upload-pages-artifact v3 vs v5, a pagefind scrape vs an npm pin). The issue asked to promote the lane to `on: workflow_call`.
+
+- `.github/workflows/docs-build.yml` (new) - the reusable lane. `on: workflow_call` with inputs `docs-path` (default `docs`), `ruby-version` (3.2), `node-version` (22), `pagefind-version` (`latest` scrapes the newest release; any other value installs verbatim - the npm-pin shape the drifted copies wanted), `freestruct-version` (`^1.1.0`); output `pagefind-version`. Carries the whole runbook once: checkout, Setup Ruby, Jekyll build, the token-auth pagefind scrape (the rate-limit receipt), the search index, Setup Node, the PINNED freestruct install + post-build SEO layer, and the Pages artifact upload. Actions stay SHA-pinned; a fresh `setup-node` pin joins the set.
+- `.github/workflows/docs-deploy.yml` - now a THIN CALLER (197 -> 55 lines): trigger, permissions (`contents: read` + `pages: write` + `id-token: write` - the caller grants the ceiling; the reusable half declares `contents: read` for itself), concurrency group, `build: uses: ./.github/workflows/docs-build.yml`, and the `deploy` job still gated to `main` (issue #30). The `paths:` filter gains `docs-build.yml` so a lane edit re-validates.
+- `scripts/check-birth-gate.cjs` - new **check 6**, the reusable-workflow contract (house rule 3): a local `uses: ./...` must point at a file that exists AND declares `on: workflow_call`, and a `workflow_call` file must be called by someone. Both directions, so a thin-caller refactor cannot half-land. The re-parse is guarded - an unparseable file is named by check 1 and skipped here (found by the new test, not by inspection).
+- `tests/birth-gate.test.cjs` (new) - 7 behavior tests: green on the live tree; caller -> `workflow_call` file (pass); caller -> non-`workflow_call` file (fail); caller -> missing file (fail); a `workflow_call` file nobody calls (fail, dead lane); a floating action pin (fail); the duplicate-YAML-key class (fail). Fixtures copy the gate into a temp tree and point `NODE_PATH` at the real `node_modules` so `js-yaml` resolves.
+- Negative-tested by hand too: each of the four contract failures exits 1 naming the file, and the restored tree exits 0.
+
+**Docs / receipts**
+
+- `DEPLOY.md` - section 2 now describes the thin-caller + reusable-lane split and the sibling call shape (`uses: dhaupin/flowforge/.github/workflows/docs-build.yml@<ref>`).
+- `MANIFEST.md` - new `docs-build.yml` row; `docs-deploy.yml` row rewritten as the thin caller; `check-birth-gate.cjs` row gains check 6; new `tests/birth-gate.test.cjs` row.
+- `README.md` + `AGENTS.md` - workflow lines updated.
+- `CHANGELOG.md` - Added entries (the reusable lane, the birth-gate test) + a Changed entry (the thin-caller refactor).
+
+**Gates (all green on the branch)**
+
+- `npm test` -> **36 pass / 0 fail** (was 29; +7 birth-gate tests).
+- `npm run check` -> PASS (six compile checks + birth-gate 4 workflows/5 checks incl. the new reusable contract + theme-parity PASS).
+- `npm run lint:docs` -> PASS.
+
+**House rules**
+
+- No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
+- This closes issue #9 - the rig's docs lane is a versioned call, not a fourth drifted copy.

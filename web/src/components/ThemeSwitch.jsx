@@ -9,25 +9,29 @@
  * first paint; this component only flips it.
  */
 import { useEffect } from 'react'
+import { THEME_KEY, paperFor } from '../theme.js'
 
-const THEME_KEY = 'flowforge-theme'
+function currentScheme() {
+  return document.documentElement.dataset.scheme || 'iris'
+}
+
+function setThemeColor(light) {
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', paperFor(currentScheme(), light))
+}
 
 function toggleTheme() {
   const el = document.documentElement
   const next = el.dataset.theme === 'light' ? 'dark' : 'light'
   el.dataset.theme = next
   try { localStorage.setItem(THEME_KEY, next) } catch { /* private mode: live without persistence */ }
-  const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', next === 'light' ? '#f5f6fa' : '#10131a')
+  setThemeColor(next === 'light')
 }
 
 export default function ThemeSwitch() {
   useEffect(() => {
     // Keep the meta theme-color honest if the bootstrap already flipped to light.
-    if (document.documentElement.dataset.theme === 'light') {
-      const meta = document.querySelector('meta[name="theme-color"]')
-      if (meta) meta.setAttribute('content', '#f5f6fa')
-    }
+    if (document.documentElement.dataset.theme === 'light') setThemeColor(true)
   }, [])
   return (
     <button type="button" className="theme-switch" onClick={toggleTheme} aria-label="Toggle light/dark mode">

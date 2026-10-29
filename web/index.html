@@ -39,15 +39,25 @@
   <meta name="theme-color" content="#10131a" />
 
   <script>
-    // Theme bootstrap: apply a persisted light theme before the stylesheet
-    // paints (the default tokens are dark). Non-critical: wrapped in try in
-    // case storage is unavailable (private mode). Keep in sync with
-    // src/components/ThemeSwitch.jsx (the key name and the meta color values).
+    // Theme + paint-scheme bootstrap: apply a persisted light theme and a
+    // persisted paint scheme before the stylesheet paints (the default tokens
+    // are dark/iris). Non-critical: wrapped in try in case storage is
+    // unavailable (private mode). Keep the keys and the paper map in sync with
+    // src/theme.js, ThemeSwitch.jsx, and SchemeSwitch.jsx (the meta color
+    // depends on BOTH axes).
     try {
-      if (localStorage.getItem('flowforge-theme') === 'light') {
-        document.documentElement.dataset.theme = 'light'
-        document.currentScript.previousElementSibling.setAttribute('content', '#f5f6fa')
+      var paper = {
+        iris:   { dark: '#10131a', light: '#f5f6fa' },
+        petrol: { dark: '#0a1113', light: '#edf3f2' },
+        golden: { dark: '#121011', light: '#f6f1e7' },
+        jade:   { dark: '#121011', light: '#f6f1e7' }
       }
+      var scheme = localStorage.getItem('flowforge-paint-scheme') || 'iris'
+      if (paper[scheme] && scheme !== 'iris') document.documentElement.dataset.scheme = scheme
+      var light = localStorage.getItem('flowforge-theme') === 'light'
+      if (light) document.documentElement.dataset.theme = 'light'
+      var p = (paper[scheme] || paper.iris)[light ? 'light' : 'dark']
+      document.currentScript.previousElementSibling.setAttribute('content', p)
     } catch (e) {}
   </script>
 

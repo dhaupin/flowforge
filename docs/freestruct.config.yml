@@ -8,6 +8,25 @@ site:
   name: flowforge
   url: https://docs.creadev.org/flowforge
   description: The shell the struct family ships sites from - landing + docs rig + CI/release plumbing, with brand as data.
+
+# Author identity (issue #11) - ships as a schema.org Person under "founder"
+# on the injected Organization JSON-LD block (the engine edition template
+# carries the {{authorJson}} seam). Same ownership shape the product site
+# and the family carry.
+author:
+  name: Creadev.org
+  url: https://creadev.org
+
+# Maintainer identity - custom JSON-LD appended after the built-in
+# Organization + WebSite pair (freestruct issue #25 hook, legacy list
+# form). The missing-only gate keeps pages that arrive with their own
+# ld+json untouched.
+jsonLd:
+  - "@type": Person
+    name: dhaupin
+    url: https://github.com/dhaupin
+    jobTitle: flowforge maintainer
+
 twitter:
   card: summary_large_image
 # og.image deliberately omitted until the PNG set lands (og-image.png is

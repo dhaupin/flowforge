@@ -1,17 +1,21 @@
-<!-- freestruct SEO template - flowforge shell edition.
+<!-- freestruct SEO template - flowforge ENGINE edition (issue #11).
      Trimmed-head contract (issue #3, freestruct 1.1.0): the Jekyll layout
-     emits title + description ONLY, so this template now carries the WHOLE
+     emits title + description ONLY, so this template carries the WHOLE
      engine surface the layout dropped - canonical + the og:title /
      og:description / og:url / og:type / og:site_name set (per-page
-     placeholders) - instead of being dupe-free against a baked head.
-     og:image ships only when the config's og.image lands (documented
-     adopter homework; the engine strips the line when empty). Our extras
-     kept from the crashtest cut: the SoftwareApplication JSON-LD + the
-     Organization author identity (the `{{siteAuthor}}` placeholder was
-     never a supported substitution - see MANIFEST receipt).
+     placeholders). og:image ships only when the config's og.image lands
+     (documented adopter homework; the engine strips the line when empty).
+     The JSON-LD is the ENGINE edition, not the shell edition: the
+     Organization block carries the {{authorJson}} founder seam and a
+     WebSite block rides the {{searchActionJson}} seam, so a config author
+     renders a founder Person instead of the shell block's empty
+     Organization (the shape that left eyestruct founderless until
+     c81b07a). The shell-edition SoftwareApplication block is retired.
      Placeholders honored: {{pageTitle}}, {{pageDescription}}, {{pageUrl}},
      {{canonicalUrl}}, {{siteUrl}}, {{siteName}}, {{siteDescription}},
-     {{twitterCard}}, {{ogImageFull}}, {{ogType}}, {{ogLocale}}. -->
+     {{twitterCard}}, {{ogImageFull}}, {{ogType}}, {{ogLocale}},
+     {{authorJson}}, {{searchActionJson}}, {{siteNameJson}}, {{siteUrlJson}},
+     {{siteDescriptionJson}}. -->
 
 <meta name="description" content="{{pageDescription}}">
 <link rel="canonical" href="{{canonicalUrl}}">
@@ -30,19 +34,25 @@
 <meta name="twitter:title" content="{{pageTitle}}">
 <meta name="twitter:description" content="{{pageDescription}}">
 
-<!-- JSON-LD (SoftwareApplication shape from the crashtest cut; the
-     Organization author identity rides config author data) -->
+<!-- JSON-LD - engine edition (Organization + WebSite pair, {{authorJson}}
+     founder seam, {{searchActionJson}} seam empty unless the config wires a
+     search endpoint - no fake ?s= action for a pagefind modal) -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "{{siteName}}",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Node.js",
-  "url": "{{siteUrl}}",
-  "description": "{{siteDescription}}",
-  "offers": { "@type": "Offer", "price": 0, "priceCurrency": "USD" },
-  "author": { "@type": "Organization", "name": "{{siteName}}", "url": "{{siteUrl}}" }
+  "@type": "Organization",
+  "name": "{{siteNameJson}}",
+  "url": "{{siteUrlJson}}",
+  "description": "{{siteDescriptionJson}}"{{authorJson}}
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{siteNameJson}}",
+  "url": "{{siteUrlJson}}"{{searchActionJson}}
 }
 </script>
 

@@ -7,6 +7,7 @@
     "web",
     "docs",
     "scripts",
+    "tests",
     ".github/workflows",
     "labs",
     "packs",
@@ -17,8 +18,11 @@
     "README.md"
   ],
   "scripts": {
-    "check": "node --check scripts/check-docs-frontmatter.cjs && node --check scripts/check-docs-links.cjs && node --check scripts/check-docs-style.cjs && node --check scripts/check-fiction-signatures.cjs && node --check scripts/check-jekyll-filters.cjs",
-    "lint:docs": "node scripts/check-docs-frontmatter.cjs && node scripts/check-docs-links.cjs && node scripts/check-docs-style.cjs && node scripts/check-fiction-signatures.cjs && node scripts/check-jekyll-filters.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "prepublishOnly": "npm test && npm run check && npm run lint:docs",
+    "check": "node --check scripts/check-docs-frontmatter.cjs && node --check scripts/check-docs-links.cjs && node --check scripts/check-docs-style.cjs && node --check scripts/check-fiction-signatures.cjs && node --check scripts/check-jekyll-filters.cjs && node --check scripts/check-theme-parity.cjs && node scripts/check-birth-gate.cjs && node scripts/check-theme-parity.cjs",
+    "lint:docs": "node scripts/check-docs-frontmatter.cjs && node scripts/check-docs-links.cjs && node scripts/check-docs-style.cjs && node scripts/check-fiction-signatures.cjs && node scripts/check-jekyll-filters.cjs && node scripts/check-theme-parity.cjs",
+    "lint:packs": "node scripts/lint-packs.cjs --json",
     "build:web": "npm run build --prefix web"
   },
   "keywords": [
@@ -37,5 +41,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.3.2"
   }
 }

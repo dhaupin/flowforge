@@ -1,23 +1,30 @@
 name: Deploy Docs
 
-# Builds docs/ (Jekyll) then runs the freestruct post-build SEO layer on
-# _site (canonical/description, og:image + twitter, JSON-LD, sitemap, robots,
-# 404, cache-bust hash, last-modified, internal-link check). The hardened
-# pagefind scrape + the PINNED freestruct install are the two receipts this
-# rig keeps for you: unauthenticated api.github.com scrapes get rate-limited
-# from shared runner IPs (an empty VERSION yields a malformed asset URL and
-# tar fails on the 404 HTML body), and a floating github:-install is a
-# random deploy (freestruct reorganized docs/lib mid-day once - PINNED, the
-# all-caps lesson is the point). Pin rides npm semver since 1.1.0
-# (issue #3), when the npm registry name finally shipped.
+# Thin caller for the reusable docs lane (issue #9). The build runbook -
+# Jekyll, the hardened pagefind scrape, the pinned freestruct post-build SEO
+# layer, the Pages artifact upload - lives ONCE in docs-build.yml; this file
+# keeps only what is per-repo: the trigger, the permissions, the concurrency
+# group, and the deploy job. The three hand-copied runbooks this replaces
+# (flowforge / gistory / eyestruct) had already drifted apart; the lane is
+# now a versioned call, not a fourth copy.
+#
+# The deploy job stays gated to main (issue #30, point 3 - the trap): once
+# staging is in the push trigger, the trigger no longer keeps its content out
+# of production; this guard does. workflow_dispatch is likewise held to main
+# unless deliberately overridden.
 
 on:
   push:
-    branches: [main]
-    paths: ['docs/**', '.github/workflows/docs-deploy.yml']
+    # staging validates the docs build too (a docs change that breaks the
+    # build should red-light on the integration branch, not surprise the
+    # promotion); the deploy job below is gated to main.
+    branches: [main, staging]
+    paths: ['docs/**', '.github/workflows/docs-deploy.yml', '.github/workflows/docs-build.yml']
   workflow_dispatch:
 
-# Permissions for GitHub Pages deployment
+# Permissions for GitHub Pages deployment. The called workflow inherits this
+# ceiling (it declares contents: read for itself); the deploy half needs
+# pages: write + id-token: write, which only the caller can grant.
 permissions:
   contents: read
   pages: write
@@ -29,82 +36,15 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-          working-directory: './docs'
-
-      - name: Build Jekyll
-        run: |
-          cd docs
-          bundle exec jekyll build
-        env:
-          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Pagefind search index (same as vant's docs deploy): the layout's
-      # modal imports /crashtest/pagefind/pagefind.js, so the index MUST be
-      # built into _site or search reports unavailable. Token-authenticated
-      # release scrape: unauthenticated api.github.com calls from shared
-      # runner IPs get rate-limited, an empty VERSION yields a malformed
-      # asset URL, and tar then fails on the 404 HTML body - refuse loudly
-      # on an unparseable tag instead of downloading garbage (vant lesson).
-      - name: Download Pagefind
-        working-directory: docs
-        run: |
-          VERSION=$(curl -sL \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/Pagefind/pagefind/releases/latest" \
-            | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
-          case "$VERSION" in
-            [0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "::error::Could not resolve the latest pagefind tag (got '$VERSION') - likely an API failure."; exit 1 ;;
-          esac
-          echo "pagefind version: v${VERSION}"
-          curl -sL --retry 3 --retry-delay 5 \
-            "https://github.com/pagefind/pagefind/releases/download/v${VERSION}/pagefind-v${VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-            -o pagefind.tar.gz
-          tar -xzf pagefind.tar.gz
-          rm pagefind.tar.gz
-          chmod +x pagefind
-
-      - name: Create search index
-        working-directory: docs
-        run: ./pagefind --site _site
-
-      # freestruct consumes, relative to the REPO ROOT:
-      #   docs/freestruct.config.yml (config) / docs/_freestruct/
-      #   inject-brand.html (template) / docs/_site (output default)
-      # npm install - the npm name published 1.0.0 first, 1.1.0 is the
-      # first post-stable surface with the engine/ reorg (docs/lib ->
-      # engine/, bin/freestruct.mjs slim shim). Semantic pin, no float:
-      # the PINNED lesson stands, only the transport changed. Invoke the
-      # engine directly with node (bin/freestruct.mjs forwards to the
-      # same runInject(); node skips any exec-bit / shebang questions).
-      # BOUNDARY: freestruct 1.1.0 is missing-only per tag slot, so the
-      # consumer layout carries title + description and the ENGINE fills
-      # canonical/OG/twitter/JSON-LD/robots - matching the trimmed
-      # _layouts/default.html (issue #3).
-      - name: Install freestruct
-        run: npm install --no-save --no-audit --no-fund freestruct@^1.1.0
-
-      - name: Run freestruct post-build layer
-        run: node node_modules/freestruct/engine/inject.js
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs/_site'
+    uses: ./.github/workflows/docs-build.yml
 
   deploy:
     needs: build
+    # Deploy ONLY from main (issue #30, point 3 - the trap): once staging is
+    # in the push trigger above, the trigger no longer keeps its content out
+    # of production; this guard does. workflow_dispatch is likewise held to
+    # main unless deliberately overridden.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -112,4 +52,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
