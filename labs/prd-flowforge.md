@@ -46,14 +46,24 @@ npm run check      # the gates (brand census + docs + theme parity + birth-gate)
 git push           # CI deploys
 ```
 
-Then one file, `flowforge.config.js`, is the only thing an adopter edits for identity. This is the `create-vite` / `create-astro` shape, which is what "pull in and run as expected" means for a site rig.
+Then one file, `site.config.js`, is the only thing an adopter edits for identity. This is the `create-vite` / `create-astro` shape, which is what "pull in and run as expected" means for a site rig.
 
 ## 5. The config contract
+
+### 5.1 The name: `site.config.js`, not `flowforge.config.js`
+
+The obvious name (`flowforge.config.js`) is wrong, and the reason is a dependency-direction rule, not taste. This repo already carries **two engine-owned identity files**: prestruct reads `web/ssr.config.js` (identity + routes) and freestruct discovers `docs/freestruct.config.yml` (legacy `ssr-config.yml`). If the single source of truth were `flowforge.config.js`, then for either engine to read it, a *shared engine* would have to depend on *one product* - the dependency points the wrong way. The shell depends on the engines; the engines never depend on the shell.
+
+The family's own convention settles it: config files are named for the **concern**, not the repo - `crashtest.config.js` appears in prestruct, freestruct, crashtest, packstruct, and eyestruct alike. The concern here is the site, so the neutral name is **`site.config.js`**. It reads as *what it configures*, not *who made the tool*, and any engine in the family can read it without importing flowforge.
+
+The end state has **one identity file, three readers**: `site.config.js` is authored once, and flowforge derives `web/ssr.config.js` + `docs/freestruct.config.yml` from it in `sync` (prestruct and freestruct keep reading their own engine-owned files, unchanged). The engines stay product-agnostic and the adopter edits one file. A future option is a published `site.config` schema package the engines import directly, but that is not needed for the identity to be shared.
+
+### 5.2 The shape
 
 One file, authored by the adopter, is the site identity:
 
 ```js
-// flowforge.config.js - the ONLY file an adopter edits for identity
+// site.config.js - the ONLY file an adopter edits for identity
 export default {
   name: 'my-site',
   tagline: 'One repo, two sites, zero styling drift.',
@@ -72,7 +82,7 @@ export default {
 }
 ```
 
-This mirrors the shape monoforge already uses for `factory.json` (name, species/pitch, siteDomain, version), so the two tools speak the same vocabulary: a monoforge `factory.json` can be the seed a `flowforge.config.js` is derived from.
+This mirrors the shape monoforge already uses for `factory.json` (name, species/pitch, siteDomain, version), so the two tools speak the same vocabulary: a monoforge `factory.json` can be the seed a `site.config.js` is derived from.
 
 ## 6. The CLI: four verbs plus doctor
 
@@ -81,7 +91,7 @@ The full verb set, in the family's plain-verb voice (monoforge: stamp/doctor/loc
 | Verb | What it does |
 |---|---|
 | `flowforge create [dir]` | Scaffold the shell into `dir` from the config (or an interactive prompt). Never clobbers existing files. The `create-vite` shape. |
-| `flowforge sync` | Regenerate the derived non-JS surfaces from the config (`docs/_config.yml`, `robots.txt`, `site.webmanifest`, `index.html` meta). Refuses on a stale generated file. |
+| `flowforge sync` | Regenerate the derived surfaces from the config: the two engine-owned files (`web/ssr.config.js`, `docs/freestruct.config.yml`) plus `docs/_config.yml`, `robots.txt`, `site.webmanifest`, and `index.html`'s meta. Refuses on a stale generated file. |
 | `flowforge build` | The prerender pipeline: validate config, vite build, inject brand, prerender routes, repair/verify 404. Wraps what `npm run build --prefix web` does today, driven by the config. |
 | `flowforge check` | The gates, run against the adopter's tree: brand census, docs frontmatter/links/style/fiction/liquid, theme parity, birth-gate. This is the verb CI calls. |
 | `flowforge doctor [dir]` | The truth battery: validate the config, refuse placeholder residue (monoforge's `FORGE-TODO` law), confirm the derived files are current, run `check`. Exit 0 is PASS only when nothing failed. |
@@ -96,8 +106,8 @@ lib/                     gates + build orchestration, versioned once, imported
   gates/                 the check-*.cjs family (brand census, docs, theme, birth)
   build.mjs              the prerender pipeline
 templates/site/          what `create` copies (the current web/ + docs/ + scripts/ shape)
-flowforge.config.js      the DOGFOOD site's config (flowforge.creadev.org)
-example/                 the dogfood site: a flowforge.config.js + the pages it derives
+site.config.js      the DOGFOOD site's config (flowforge.creadev.org)
+example/                 the dogfood site: a site.config.js + the pages it derives
 ```
 
 `files` tightens to `bin/`, `lib/`, `templates/` - no dogfood output in the tarball. The gate fixes that flow to adopters ride version bumps; the adopter owns their app code (pages, components) but not the gates. That split is the reason for `lib/` rather than a fresh copy per site: a gate bug fixed once must reach every adopter through `npm update`, not through a re-copy.
@@ -106,12 +116,14 @@ example/                 the dogfood site: a flowforge.config.js + the pages it 
 
 Two kinds of surface, and the split matters:
 
-- **JS surfaces import the config directly** - `ssr.config.js`, `navItems.js`, and the theme bootstrap read `flowforge.config.js`. No generation, no drift possible.
-- **Non-JS surfaces get generated** by `flowforge sync` - `docs/_config.yml`, `robots.txt`, `site.webmanifest`, `index.html`'s meta. A gate then fails when any generated file is stale.
+- **JS surfaces import the config directly** - `site.config.js` is imported by the theme bootstrap and by the surfaces flowforge owns (`navItems.js` and the page metadata). No generation, no drift possible.
+- **Non-JS and engine-owned surfaces get generated** by `flowforge sync` - `web/ssr.config.js` and `docs/freestruct.config.yml` (the two files prestruct and freestruct read), plus `docs/_config.yml`, `robots.txt`, `site.webmanifest`, and `index.html`'s meta. A gate then fails when any generated file is stale.
+
+The engine-owned files are generated rather than imported on purpose: prestruct and freestruct keep reading exactly what they read today (`ssr.config.js`, `freestruct.config.yml`), so no engine change is required and no engine depends on flowforge. The adopter edits `site.config.js`; `sync` fans it out to the two engine files and the static surfaces.
 
 And the missing teeth, which is the whole point:
 
-**A brand census gate.** Grep the shipped tree for identity literals *outside* `flowforge.config.js` and fail with `file:line`. This is the same pattern as the existing version-truth census leg (`tests/census.test.cjs`), and it is what turns "replace every YOUR... value" from a manual ritual into a mechanical guarantee. It also catches the regression class this repo has already paid for once (the identity drift the family watches for).
+**A brand census gate.** Grep the shipped tree for identity literals *outside* `site.config.js` and fail with `file:line`. This is the same pattern as the existing version-truth census leg (`tests/census.test.cjs`), and it is what turns "replace every YOUR... value" from a manual ritual into a mechanical guarantee. It also catches the regression class this repo has already paid for once (the identity drift the family watches for).
 
 ## 9. Templates and the example folder
 
@@ -135,7 +147,7 @@ monoforge is the **factory** (stamps any fleet repo from proven blocks); flowfor
 |---|---|---|
 | Scope | any fleet repo (npm tool, component family, site) | the landing + docs site, specifically |
 | Verb | `new` (stamp) / `doctor` / `lock` / `cut` | `create` / `sync` / `build` / `check` / `doctor` |
-| Config | `factory.json` | `flowforge.config.js` |
+| Config | `factory.json` | `site.config.js` |
 | Templates | generic blocks (docs system, workflows, release ladder) | the site shell (web + docs + theme axes) |
 
 The tie-in: flowforge is the **site profile** monoforge's PRD already flags as missing ("the first stamped repo that is NOT an npm tool graduates that profile from proposal to proven"). Two honest ways to relate them, to be decided:
@@ -147,7 +159,7 @@ The lean is **B first, A once the profile is proven** - monoforge's own rule of 
 
 ## 12. Migration phases
 
-**Phase 0 - brand contract (in-repo, no new package).** Add `flowforge.config.js`; make every JS surface import it; add `sync` for the generated surfaces; add the brand census gate. After this, *this repo is a dogfood generated from data*, and the gates prove it. Contained, no breaking change, and every later phase depends on it.
+**Phase 0 - brand contract (in-repo, no new package).** Add `site.config.js`; make every JS surface import it; add `sync` for the generated surfaces; add the brand census gate. After this, *this repo is a dogfood generated from data*, and the gates prove it. Contained, no breaking change, and every later phase depends on it.
 
 **Phase 1 - split tool from site.** Move the copyable files into `templates/site/`; move the reusable gates into `lib/`; move the dogfood into `example/`. The root package becomes the tool.
 
@@ -160,10 +172,13 @@ The lean is **B first, A once the profile is proven** - monoforge's own rule of 
 ## 13. Open questions
 
 1. **Does the dogfood site stay in-tree (`example/`) or move out?** In-tree gives the CI drift guard (section 9); out-of-tree gives a cleaner tarball. The lean is in-tree, gitignored from the tarball via `files`.
-2. **Config format: JS or JSON?** JS (`flowforge.config.js`) matches `ssr.config.js` and allows comments; JSON matches `factory.json` and is language-agnostic for the "Use this template" channel. The lean is JS, with a JSON escape hatch for the template button.
+2. **Config format: JS or JSON?** JS (`site.config.js`) matches `ssr.config.js` and allows comments; JSON matches `factory.json` and is language-agnostic for the "Use this template" channel. The lean is JS, with a JSON escape hatch for the template button.
 3. **How thin is `create` versus monoforge's `new`?** If A is chosen (section 11), `create` may just be `new` with the site block set preselected. Defer until the profile is proven.
 4. **Cloudflare Pages vs GitHub Pages as the default deploy?** Both are in the family. The current shell ships GH Pages; the family's newer repos lean Cloudflare (wrangler + functions canary). Pick one default, keep the other as a config value.
 5. **Does the 1.0.0 bump wait for Phase 3?** Yes - 0.9.0 stays until the tool is real, per the family ladder (0.x is the manual ship lane).
+6. **Does `site.config.js` graduate to a family-shared schema package?** Today flowforge derives `ssr.config.js` + `freestruct.config.yml` from it. A later option (section 5.1) is a published `site.config` schema that prestruct and freestruct import directly, so all three read one source with no derivation step. Defer until a second consumer exists (the rule of three: flowforge is instance one).
+
+**Resolved:** the config file is `site.config.js`, not `flowforge.config.js` - a product-named config would force prestruct and freestruct to depend on flowforge, inverting the engine-to-shell dependency. See section 5.1.
 
 ## 14. Non-goals
 
