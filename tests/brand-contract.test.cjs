@@ -104,6 +104,17 @@ test('brand census IGNORES identity names inside comments (prose about the brand
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
+test('brand census FAILS on a brand name in a FILENAME (invisible to a content scan)', () => {
+  const dir = tempTree()
+  // A brand name in a PATH is the literal a rebrand misses - the art master
+  // shipped as flowforge-logo.jpg and had to be renamed by hand. Plant one.
+  fs.writeFileSync(path.join(dir, 'web', 'public', 'flowforge-logo.jpg'), 'not really a jpg')
+  const r = run(tempGate(dir, 'check-brand-census.mjs'), [], dir)
+  assert.equal(r.code, 1, 'a brand name in a filename must fail the census')
+  assert.match(r.out, /web\/public\/flowforge-logo\.jpg.*path carries identity literal/)
+  fs.rmSync(dir, { recursive: true, force: true })
+})
+
 test('ssr.config.js is a pure adapter: it has no identity literals of its own', () => {
   const src = fs.readFileSync(path.join(REPO, 'web', 'ssr.config.js'), 'utf8')
   assert.match(src, /import site from '\.\.\/site\.config\.js'/, 'ssr.config.js must import the one source')
