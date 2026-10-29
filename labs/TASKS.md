@@ -414,3 +414,29 @@ Branch `staging` off `main` @ df86464 (2026-10-25 "Family reqs round"), clean tr
 
 - #27 / #29 remainder: poststruct + eyestruct CI slots stay TBA (both are README/horcrux stubs - no CLI to pin yet).
 - #4: the deterministic-pack / pack-twice byte-compare step is noted by the birth-gate but not exercised (the shell ships no packer).
+
+## 2026-10-29 (later) - logo round: the icon pipeline runs on real art (issue #17)
+
+The user supplied brand art at `web/public/brand/flowforge-logo.jpg` (203301 bytes, 2048x2048, moved off the `public/` root into `public/brand/` to match the family convention - eyestruct ships `web/public/brand/`, and the script's own example is `--art public/brand/logo.png`). Ran the pipeline on it and found a real bug inherited from the extraction source.
+
+**The bug: the icon shipped as a photographic negative.**
+
+- `web/scripts/adopt-icons.mjs` builds `inkMask` by setting ink pixels to **255 (white)** on a 0 (black) field, then calls potrace with `blackOnWhite: true`. potrace's `blackOnWhite` means "the input is dark-on-light, trace the DARK pixels" - so it traced the **background frame**, not the mark. The script then fills that frame with the light ink color, and the icon renders as a light tile with a dark mark: the negative of the art.
+- Receipt: upstream `dhaupin/eyestruct` `web/scripts/make-icons.mjs` @ e4a73ac carries the exact same line (`potrace.trace(inkPng, { ..., blackOnWhite: true }, ...)` over the same ink=255 mask), so the class is inherited, not introduced.
+- Proof, not a guess: correlate the traced fill against the ground-truth ink mask. `blackOnWhite: true` -> **-0.999** (perfectly inverted); `blackOnWhite: false` -> **+0.999**. End-to-end, the rendered `icon.svg` correlates with the source art at **-0.648** before and **+0.658** after the fix.
+- Fix: `blackOnWhite: false` (trace the white pixels the mask actually wrote), plus an in-script **polarity guard** - it compares the traced-path bbox to the ink-mask bbox and throws if the paths span the full frame while the mask is inset (exactly the inverted case), so the class cannot return silently. Negative-tested: forcing `true` makes the script exit 1 with the named error.
+- Regenerated the whole set from the real art: `icon.svg` (both faces, byte-equal), `icon-192/512.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png`. Verified orientation (dark tile, transparent rounded corners, light mark, accent ring + horizontal strike) and byte-parity `web/public/icon.svg` == `docs/icon.svg`.
+
+**Also fixed**
+
+- `MANIFEST.md` - the `icon.svg` row had merged with the `index.md` row (a stray `||`); split, and the icon rows now say REAL BRAND ART instead of "placeholder", with the brand-master row and the adoption-fix note on the `adopt-icons.mjs` row.
+- `CHANGELOG.md` - Added entry for the brand master + regenerated set; Fixed entry for the polarity adoption fix.
+
+**Gates (all green on the branch)**
+
+- `npm test` -> 22 pass / 0 fail.
+- `npm run check` -> PASS (five compile checks + birth-gate: 3 workflows, 4 checks incl. 9 SHA-pinned action refs).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters).
+- `npm run build --prefix web` -> 3/3 pages rendered, REPAIR-404 PASS; `dist/brand/flowforge-logo.jpg` ships (adopter brand data, the eyestruct convention).
+
+Version stays 0.9.0 (no bump, no OIDC - the user's manual push comes first).

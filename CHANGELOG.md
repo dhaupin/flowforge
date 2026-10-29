@@ -16,6 +16,7 @@ A two-bucket round: adopt the fixes the family's newest repos already paid for (
 - `scripts/unwrap-prose.cjs` - the flowing-prose tool (issue #25).
 - `tests/census.test.cjs` - the version-truth census leg (issue #28): root `package.json` is THE version source; `web/package.json` and the README Status line cannot drift.
 - `web/scripts/adopt-icons.mjs` + `web/scripts/og-image.mjs` - the icon/OG pipeline (issue #17): raster brand art -> traced vector -> full icon set + an authored `brand-mark.json` the OG card redraws. Helpers ride `npm i --no-save`; no rasterizer dep committed.
+- `web/public/brand/flowforge-logo.jpg` - the brand master, and the real icon set it produces (`icon.svg` into BOTH faces byte-equal, `icon-192/512`, `favicon-32`, `apple-touch-icon`, `og-image.png`): the shell's placeholder art is replaced. The pipeline traces the mark correctly (adoption fix below), so the icons now read as the art, not its negative.
 - `.gitignore` (root) - the docs-preview belt-and-suspenders block (issue #22).
 - `docs/freestruct.config.yml` author + `jsonLd` identity blocks (issue #11).
 - `DEPLOY.md` local docs-preview recipe (issue #22) - the out-of-tree Ruby/bundler shape an unprivileged sandbox needs.
@@ -33,6 +34,8 @@ A two-bucket round: adopt the fixes the family's newest repos already paid for (
 - README / AGENTS / DEPLOY / MANIFEST / CHANGELOG - unwrapped to flowing prose (issue #25) and updated for the new gates, pins, and ladder.
 
 ### Fixed
+
+- `web/scripts/adopt-icons.mjs` polarity (issue #17 adoption): the upstream eyestruct `make-icons.mjs` @ e4a73ac traces with `blackOnWhite: true` while its mask sets ink to 255 (white), so potrace traced the BACKGROUND frame and every icon shipped as a photographic negative of the art (correlation of traced fill vs. the ink mask: -0.999; +0.999 with `blackOnWhite: false`). Fixed on adoption, plus an in-script polarity guard that refuses the inverted bbox so the class cannot return.
 
 - The version surfaces can no longer drift silently (the census leg fails the build), and a publish can no longer cut a 0.x tarball or a tag that lies about its version.
 

@@ -96,12 +96,24 @@ const inkPng = await sharp(inkMask, { raw: { width: WORK, height: WORK, channels
   .png()
   .toBuffer()
 const traced = await new Promise((resolve, reject) => {
-  potrace.trace(inkPng, { threshold: 128, turdSize: 8, optTolerance: 0.4, blackOnWhite: true },
+  // blackOnWhite:false = trace the WHITE pixels. The mask above sets ink to
+  // 255 (white) on a 0 (black) field, so this is the polarity that traces the
+  // MARK. With blackOnWhite:true potrace traces the black field instead - the
+  // background frame - and the icon renders as a light tile with a dark mark
+  // (the negative of the art). Verified by correlating the traced fill against
+  // the ink mask: +0.999 here, -0.999 with true. (The eyestruct source at
+  // e4a73ac carries the same latent inversion; fixed on adoption.)
+  potrace.trace(inkPng, { threshold: 128, turdSize: 8, optTolerance: 0.4, blackOnWhite: false },
     (err, svg) => (err ? reject(err) : resolve(svg)))
 })
 const paths = [...traced.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]).filter((d) => d.length > 1)
 if (!paths.length) throw new Error('potrace produced no paths')
 
+// Polarity guard. The traced paths must cover the ink MASK, not the
+// background field around it. The wrong polarity traces the full WORK box
+// (the dark frame), so its bbox spans ~0..WORK; the mark's bbox is inset.
+// Compare the traced bbox to the mask bbox and refuse a mismatch - this is
+// the exact inversion the blackOnWhite flag above can reintroduce.
 let minX = WORK, maxX = -1, minY = WORK, maxY = -1
 for (let y = 0; y < WORK; y++) {
   for (let x = 0; x < WORK; x++) {
@@ -112,6 +124,17 @@ for (let y = 0; y < WORK; y++) {
       if (y > maxY) maxY = y
     }
   }
+}
+
+const pathNums = [...paths.join(' ').matchAll(/(-?[\d.]+)[ ,]+(-?[\d.]+)/g)]
+const px = pathNums.map((m) => +m[1])
+const py = pathNums.map((m) => +m[2])
+const tol = WORK * 0.04
+const tracedCoversFrame = Math.min(...px) < tol && Math.min(...py) < tol &&
+  Math.max(...px) > WORK - tol && Math.max(...py) > WORK - tol
+const maskInset = minX > tol || minY > tol || maxX < WORK - tol || maxY < WORK - tol
+if (tracedCoversFrame && maskInset) {
+  throw new Error('adopt-icons: traced paths span the full frame but the ink mask is inset - potrace polarity is inverted (check blackOnWhite); the icon would ship as a negative of the art')
 }
 
 // --- 3. measure the accent iris + tick -------------------------------------
