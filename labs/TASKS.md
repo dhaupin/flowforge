@@ -527,3 +527,27 @@ Owner asked what actually ships in the npm package and how to make it a system u
 - **Surveyed monoforge** (`dhaupin/gistory@main:monoforge-staging`) as the sibling precedent: it already ships `bin/forge.mjs`, `src/` verbs (stamp/doctor/lock/cut), `templates/` with `__TOKEN__` substitution, `factory.json`, and a `.monoforge-stamp.json` manifest that scopes the doctor's truth-slot scan. The PRD aligns flowforge's config vocabulary with `factory.json` and records the two ways the tools relate (flowforge as a monoforge provider, or standalone config-compatible - lean: standalone first, provider once the profile is proven).
 - **Receipts read**: eyestruct `publish.yml` (the npm OIDC + GH release + verify ladder the owner asked to mirror) + `scripts/release-notes.cjs` (release notes extracted from the CHANGELOG, refuses empty); prestruct `package.json` + `bin/cli.mjs` + `init/` + `example/` (the layout precedent, and the "we can do it better" note: our example is tool-generated in CI so it cannot drift).
 - Gates green after the add: `npm run lint:docs` PASS (fiction gate now 43 files), `npm run check` PASS. No version bump (0.9.0 = 0.9.0); no code change yet - PRD only, awaiting owner review on the open questions (section 13) before Phase 0.
+
+---
+
+### 2026-10-29 - session: Phase 0 - the brand contract (site.config.js)
+
+Owner approved the PRD path and asked to push + start Phase 0. Also asked whether `site.config.js` collides outside the ecosystem, and asked for an issue so the "shared schema package" idea is not forgotten.
+
+- **Naming research (answer: it helps, cannot hurt).** npm `site.config` + `site-config` both FREE (404). GitHub has ~77 repos with a root `site.config.js` (small portfolio/blog sites; no dominant tool). Major SSGs all use their own: `astro.config.mjs`, `docusaurus.config.js`, `eleventy.config.js`, `.vitepress/config.js`, `next.config.js` - none claims `site.config.js`. Config filenames are repo-local (not a global namespace), so a collision is a non-event; a bespoke name would be more distinctive but less self-explanatory. Keep `site.config.js`.
+- **Issue #32 created** - "Graduate site.config.js to a shared schema package (prestruct + freestruct read it directly)". Records the next step (one source, three readers, no derivation) with the trigger (a second consumer, or friction) per the family rule of three. https://github.com/dhaupin/flowforge/issues/32
+- **Pushed staging** (`819b5f2`) - PRD + the config rename. (First push reported OK but the local tracking ref was stale; re-fetched, remote confirmed at `819b5f2` via the API.)
+- **Phase 0 shipped:**
+  - `site.config.js` (root) - THE identity source (name, wordmark, tagline, description, url, repo, author, maker, org, docs block, theme keys, nav, footer extras, routes, 404). Added to `package.json` `files`.
+  - `web/src/site.js` - the web bundle's one accessor (+ `routeMeta(path)`).
+  - `web/ssr.config.js` - now an ADAPTER over site.config.js (prestruct reads what it always read; no engine change, no engine depends on flowforge).
+  - `web/src/components/navItems.js`, `Nav.jsx`, `Footer.jsx`, `pages/Home|Terms|Privacy.jsx` - identity from the config.
+  - `web/src/theme.js` - keys sourced from config, renamed to the neutral `site-theme`/`site-paint-scheme` (protocol, not brand); `web/index.html` + docs layout mirror the rename.
+  - `docs/_layouts/default.html` - identity now Liquid (`{{ site.* }}`); nav URLs baseurl-relative (layout prefixes `site.baseurl`).
+  - `docs/_data/nav.yml` - baseurl-relative, brand-free.
+  - `scripts/flowforge-sync.mjs` + `npm run sync`/`sync:check` - generates `docs/_config.yml`, `docs/freestruct.config.yml`, `web/public/robots.txt`, `web/public/site.webmanifest`; deterministic; `--check` refuses drift. Wired into `npm run check`.
+  - `scripts/check-brand-census.mjs` - the teeth: refuses an identity literal in any structural surface outside `site.config.js`, names file:line, strips comments, skips the sync-owned outputs.
+  - `tests/brand-contract.test.cjs` - 8 behavior tests (live pass, determinism, drift fails, planted literal fails, comments ignored, ssr adapter literal-free, no product-named config).
+- **Verification:** `npm test` 44 pass / 0 fail (was 36; +8). `npm run check` green (sync:check PASS, BRAND-CENSUS PASS). `npm run lint:docs` green (fiction gate now 48 files). **`npm run build --prefix web` -> 3/3 pages rendered**, inject-brand + repair-404 PASS; dist carries the config-derived wordmark/title/canonical and the neutral keys.
+- **Receipts:** CHANGELOG.md (Added/Changed block), MANIFEST.md (new "root (the identity contract)" table), AGENTS.md (layout tree + house rule 1 rewritten for the one-file rebrand). No version bump (0.9.0 = 0.9.0).
+- **Next (Phase 1, not started):** split tool from site - `templates/site/`, `lib/`, `example/`. Awaiting owner review.

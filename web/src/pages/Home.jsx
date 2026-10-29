@@ -7,20 +7,15 @@
  * CTAs compose .btn + a color modifier (the base class carries geometry).
  */
 import usePageMeta from '../hooks/usePageMeta.js'
-
-const SITE_URL = 'https://flowforge.creadev.org'
+import site, { routeMeta } from '../site.js'
 
 export default function Home() {
-  usePageMeta({
-    siteUrl: SITE_URL,
-    path: '/',
-    title: 'flowforge - the shell the struct family ships sites from',
-    description: 'One repo, two sites, zero styling drift: the landing shell, the docs rig, and the CI/release plumbing the struct family ships from, with brand as data.',
-  })
+  const meta = routeMeta('/')
+  usePageMeta({ siteUrl: site.url, path: '/', title: meta.title, description: meta.description })
   return (
     <section className="hero">
       <div className="wrap">
-        <p className="eyebrow">flowforge shell</p>
+        <p className="eyebrow">{site.name} shell</p>
         <h1>
           One repo, two sites, <span className="accent">zero styling drift.</span>
         </h1>
@@ -31,8 +26,8 @@ export default function Home() {
           light/dark switch, search, pagefind, deploy workflows).
         </p>
         <div className="cta-row">
-          <a className="btn btn-primary" href="https://github.com/dhaupin/flowforge">See the repo</a>
-          <a className="btn btn-ghost" href="https://docs.creadev.org/flowforge/">Read the docs</a>
+          <a className="btn btn-primary" href={site.repo}>See the repo</a>
+          <a className="btn btn-ghost" href={`${site.docs.url}/`}>Read the docs</a>
         </div>
         <pre className="code"><span className="cm"># 60 seconds - the shell is real pages, not a prototype</span>{'\n'}npx <span className="k">prestruct</span> <span className="k">build</span>{'\n'}<span className="cm"># {'>'} dist/, one directory per route, hydrates with zero mismatch</span></pre>
       </div>

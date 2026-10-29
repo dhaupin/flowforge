@@ -1,5 +1,5 @@
 ---
-# Jekyll layout for YOUR docs - the flowforge rig shape: fixed header
+# Jekyll layout for YOUR docs - the site rig shape: fixed header
 # (search trigger > GitHub icon > light/dark switch > hamburger),
 # slide-out mobile sidebar, and a pagefind modal search (Cmd+K). Search
 # requires the pagefind index the docs workflow builds
@@ -21,7 +21,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page.title | default: "flowforge docs" }} | flowforge</title>
+    <title>{{ page.title | default: site.title }} | {{ site.title }}</title>
     <meta name="description" content="{{ page.description | default: 'Your site: plain two-sentence description.' }}">
     {%- if page.noindex %}<meta name="robots" content="noindex">{% endif -%}
     <link rel="icon" type="image/svg+xml" href="{{ site.baseurl }}/icon.svg">
@@ -239,9 +239,9 @@
         // scheme need applying here. Keep the keys in sync with the toggle
         // handlers below and with the landing shell (web/src/theme.js).
         try {
-            var s = localStorage.getItem('flowforge-paint-scheme');
+            var s = localStorage.getItem('{{ site.scheme_key }}');
             if (s && s !== 'iris') document.documentElement.dataset.scheme = s;
-            if (localStorage.getItem('flowforge-theme') === 'light') {
+            if (localStorage.getItem('{{ site.theme_key }}') === 'light') {
                 document.documentElement.dataset.theme = 'light';
             }
         } catch (e) {}
@@ -251,7 +251,7 @@
     <header class="header">
         <a href="{{ site.baseurl }}/" class="header-brand">
             <img src="{{ site.baseurl }}/icon.svg" alt="" class="brand-logo" aria-hidden="true">
-            <span><span class="brand-accent">flow</span>forge</span>
+            <span><span class="brand-accent">{{ site.brand_accent }}</span>{{ site.brand_rest }}</span>
             <span class="docs-tag">docs</span>
         </a>
         <div class="header-right">
@@ -259,7 +259,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <span class="search-key">Ctrl K</span>
             </button>
-            <a href="https://github.com/dhaupin/flowforge" class="header-btn" aria-label="flowforge on GitHub" target="_blank" rel="noopener">
+            <a href="{{ site.repo }}" class="header-btn" aria-label="{{ site.title }} on GitHub" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
             </a>
             <select class="scheme-switch" id="schemeSwitch" aria-label="Paint scheme">
@@ -292,7 +292,9 @@
                     {%- assign i_path = item.url | remove: '.html' | replace: '/', '' -%}
                     {%- assign p_path = page.url | remove: 'index.html' | replace: '/', '' -%}
                   {%- endunless -%}
-                <li><a href="{{ item.url }}"
+                {%- assign item_href = item.url -%}
+                {%- unless external %}{%- assign item_href = site.baseurl | append: item.url -%}{%- endunless -%}
+                <li><a href="{{ item_href }}"
                        {%- if external %} target="_blank" rel="noopener"{% else %}{% if p_path != '' and p_path contains i_path %} class="active"{% endif %}{% endif %}>{{ item.title }}</a></li>
                 {% endfor %}
             </ul>
@@ -303,11 +305,11 @@
     <main class="main">
         {{ content }}
         <div class="doc-footer">
-            flowforge is <a href="https://github.com/dhaupin/flowforge">open source</a> -
-            site <a href="https://flowforge.creadev.org/">flowforge.creadev.org</a> -
-            <a href="https://flowforge.creadev.org/terms">terms</a> -
-            <a href="https://flowforge.creadev.org/privacy">privacy</a> -
-            part of the <a href="https://creadev.org" target="_blank" rel="noopener">Creadev</a> family
+            {{ site.title }} is <a href="{{ site.repo }}">open source</a> -
+            site <a href="{{ site.site_url }}">{{ site.site_url }}</a> -
+            <a href="{{ site.site_url }}/terms">terms</a> -
+            <a href="{{ site.site_url }}/privacy">privacy</a> -
+            part of the <a href="{{ site.org_url }}" target="_blank" rel="noopener">{{ site.org_name }}</a> family
         </div>
     </main>
 
@@ -328,7 +330,7 @@
         var el = document.documentElement;
         var next = el.dataset.theme === 'light' ? 'dark' : 'light';
         el.dataset.theme = next;
-        try { localStorage.setItem('flowforge-theme', next); } catch (e) {}
+        try { localStorage.setItem('{{ site.theme_key }}', next); } catch (e) {}
     });
 
     // Paint-scheme picker (issue #20). Iris is the default (no attribute).
@@ -338,7 +340,7 @@
         var el = document.documentElement;
         if (this.value === 'iris') delete el.dataset.scheme;
         else el.dataset.scheme = this.value;
-        try { localStorage.setItem('flowforge-paint-scheme', this.value); } catch (e) {}
+        try { localStorage.setItem('{{ site.scheme_key }}', this.value); } catch (e) {}
     });
 
     // Sidebar (vant shape)

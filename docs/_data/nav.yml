@@ -1,6 +1,7 @@
 # Starter docs nav (freestruct menu layer format - same shape the struct
-# family ships). URLs ride the deployed baseurl, value-for-value with
-# docs/_config.yml (deployed: /flowforge).
+# family ships). URLs are BASEURL-RELATIVE: the layout prefixes site.baseurl,
+# so the same nav.yml works on any deploy path without editing (no brand or
+# baseurl literal here - the brand census gate holds that).
 #
 # This starter links ONLY pages the shell actually ships. Replace it with
 # your own groups as your pages land - commented rows show the shape.
@@ -8,7 +9,7 @@
 - title: Getting Started
   items:
   - title: Overview
-    url: /flowforge/
+    url: /
 
 # The release-post surface rides the menu (issue #15): a full release-post
 # tree hidden from navigation is a surface nobody finds. Label convention:
@@ -17,7 +18,7 @@
 - title: Reference
   items:
   - title: Release Posts
-    url: /flowforge/discussions/
+    url: /discussions/
 
 # Exemplar rows (shape reference - point them at real pages when you have them):
 #  - title: Reference

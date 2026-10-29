@@ -5,11 +5,15 @@ flowforge is the **shell** the struct family ships new sites from: the landing +
 ## Layout
 
 ```text
+site.config.js          THE site identity - the ONE file a rebrand edits
 web/                    the prestruct landing shell (React/Vite, prerendered)
   src/styles.css        the ENTIRE design system - semantic tokens only
+  src/site.js           the web bundle's accessor for site.config.js
   src/components/       Nav / Footer / ThemeSwitch / navItems (one nav vocabulary)
   src/pages/            placeholder pages - replace, keep route shape
-  ssr.config.js         site identity + route map (prestruct fills it)
+  ssr.config.js         prestruct's config - an ADAPTER over site.config.js
+scripts/flowforge-sync.mjs     fans the identity out to the non-JS surfaces
+scripts/check-brand-census.mjs refuses an identity literal outside site.config.js
 docs/                   the Jekyll docs rig
   _layouts/default.html header, sidebar, pagefind search, theme tokens
   _data/nav.yml         (yours to add) - sidebar sections come from here
@@ -23,7 +27,7 @@ packs/README.md         the /packs contract (see below) - packs live in packs/pu
 
 ## House rules (each one paid for in real bugs)
 
-1. **Tokens own the palette.** Every color rides semantic variables (`--paper/--surface/--raised/--ink/--ink-soft/--accent/--moss/--err/...`); the light theme is a second block of the SAME token set; a layout class never hardcodes a hex. Re-brand = edit tokens + `navItems.js` + `ssr.config.js`. Nothing else moves.
+1. **Tokens own the palette.** Every color rides semantic variables (`--paper/--surface/--raised/--ink/--ink-soft/--accent/--moss/--err/...`); the light theme is a second block of the SAME token set; a layout class never hardcodes a hex. Re-brand = edit `site.config.js` (identity, nav, routes) + the token block. Nothing else moves: the JS surfaces import the config, and `npm run sync` regenerates the engine-owned files (`web/ssr.config.js`, `docs/freestruct.config.yml`) and the static surfaces; the brand census gate refuses a literal that lives anywhere else. `site.config.js` is concern-named on purpose - a product-named config would force prestruct/freestruct to depend on flowforge (see labs/prd-flowforge.md 5.1).
 2. **Theme is one attribute.** `<html data-theme>` + a no-flash inline bootstrap; both switch icons always render (CSS picks), so prerender and hydration agree byte-for-byte. Icon is the action (sun shows in dark mode - clicking goes light), the shared family convention.
 3. **Gates fail at cause.** Every `scripts/check-*.cjs` names file:line. When a bug is caught twice, it becomes a gate - add a signature/check the same day, never bend a check to silence it.
 4. **Pins never float.** prestruct (npm), freestruct (workflow install), the pagefind scrape, and every GitHub Action (SHA-pinned, the human tag in a comment) are pinned in the workflow files. Bumping a pin moves the [MANIFEST.md](./MANIFEST.md) row in the SAME commit.

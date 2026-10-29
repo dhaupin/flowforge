@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https
 
 ## Unreleased - staging (2026-10-29)
 
+### Added
+
+- `site.config.js` (root) - THE site identity, authored once, read everywhere (Phase 0 of `labs/prd-flowforge.md`). Holds name, wordmark, tagline, description, url, repo, author, maker, org, docs block, theme block (the two axes as protocol constants), nav vocabulary, footer extras, routes, and the 404 copy. Named for the CONCERN, not the tool (PRD 5.1): a product-named config would force prestruct and freestruct to depend on flowforge, inverting the engine-to-shell dependency. Added to `package.json` `files` so adopters get it.
+- `web/src/site.js` - the web bundle's single accessor for the identity (re-exports the root config + a `routeMeta(path)` helper), so the deep relative path appears exactly once and every surface imports one module.
+- `scripts/flowforge-sync.mjs` + `npm run sync` / `npm run sync:check` - fan the identity out to the surfaces that cannot import it: `docs/_config.yml`, `docs/freestruct.config.yml`, `web/public/robots.txt`, `web/public/site.webmanifest`. Deterministic (same config -> same bytes, no wall clock); `--check` refuses a drifted file. Wired into `npm run check`.
+- `scripts/check-brand-census.mjs` - the brand census gate (PRD 8): refuses an identity literal (the site name + the domain fragments derived from the config) in any structural surface outside `site.config.js`. Names file:line, strips comments so prose about the brand is not read as a hardcode, and skips the sync-owned outputs (proven current by `sync:check`). This is the missing teeth that turns "replace every YOUR... value" from a manual hunt into a mechanical guarantee.
+- `tests/brand-contract.test.cjs` - 8 behavior tests: live-tree sync:check + census pass, sync determinism, a hand-edited generated file failing sync:check, a planted literal failing the census, comments being ignored, `ssr.config.js` proven to carry no literal of its own, and `flowforge.config.js` proven absent.
+
+### Changed
+
+- `web/ssr.config.js` - now an ADAPTER, not a second source: it imports `site.config.js` and reshapes it for prestruct (`siteUrl`, `siteName`, `routes`, `notFound`). prestruct reads exactly what it always read, so the engine needs no change.
+- `web/src/components/navItems.js` - `NAV_ITEMS`/`FOOTER_EXTRAS` now source from `site.config.js` (the nav vocabulary is one list, from one place).
+- `web/src/components/Nav.jsx`, `Footer.jsx`, `web/src/pages/Home.jsx`|`Terms.jsx`|`Privacy.jsx` - brand mark, repo link, maker line, docs URL, page titles/descriptions, and the eyebrow all derive from the config (page titles/descriptions via `routeMeta(path)`).
+- `web/src/theme.js` - `THEME_KEY`/`SCHEME_KEY` now come from the config's theme block, and the values are renamed to the neutral `site-theme`/`site-paint-scheme` (protocol constants, not brand; `web/index.html`'s pre-paint bootstrap and the docs layout mirror the rename).
+- `docs/_layouts/default.html` - identity is now Liquid (`{{ site.repo }}`, `{{ site.title }}`, `{{ site.site_url }}`, the wordmark split, the theme/scheme keys) instead of hardcoded literals, and the nav URLs are baseurl-relative (the layout prefixes `site.baseurl`).
+- `docs/_data/nav.yml` - URLs are baseurl-relative, so the same nav works on any deploy path and carries no brand/baseurl literal.
+- `package.json` - added `sync`/`sync:check`; `check` now includes the sync:check lane and the brand census; `site.config.js` added to `files`.
+
 A two-bucket round: adopt the fixes the family's newest repos already paid for (Bucket A) and bring the shell's process surfaces up to the family standard (Bucket B). No version bump - the release stays 0.9.0 until the first tag; the census leg keeps every surface honest meanwhile.
 
 ### Added

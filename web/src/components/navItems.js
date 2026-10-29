@@ -1,24 +1,16 @@
 /**
  * The site's nav vocabulary - ONE list that the header, the burger sidebar,
- * and the footer all render from. Probes (port the web-docs-consistency test
- * if you also ship docs) read this file to guarantee surfaces never drift.
+ * and the footer all render from. Sourced from site.config.js (the single
+ * identity file), so the surfaces cannot drift from the brand. Probes (port
+ * the web-docs-consistency test if you also ship docs) read this file.
  *
  * Group semantics: 'site' = internal route (NavLink-active), 'out' = external
  * surface (the GitHub icon in the header replaces this entry's label there;
  * the FOOTER still renders the text link - see Nav.jsx HEADER_LINKS).
  */
-export const NAV_ITEMS = [
-  // primary app routes - drop in yours
-  { label: 'Home', to: '/', end: true, group: 'site' },
-  // outbound surfaces
-  { label: 'GitHub', href: 'https://github.com/dhaupin/flowforge', group: 'out' },
-]
+import site from '../site.js'
 
-/**
- * Footer-only extras (legal + provenance). Keep the LEGAL labels smaller than
- * the nav; provenance links belong in the footer, not the header.
- */
-export const FOOTER_EXTRAS = [
-  { label: 'Terms', href: '/terms' },
-  { label: 'Privacy', href: '/privacy' },
-]
+export const NAV_ITEMS = site.nav
+
+/** Footer-only extras (legal + provenance). */
+export const FOOTER_EXTRAS = site.footerExtras

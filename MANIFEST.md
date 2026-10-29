@@ -4,6 +4,15 @@ Every file in this rig is either an extraction from a deployed, verified surface
 
 Extraction source: **dhaupin/crashtest @ 905aa91** (2026-10-24) unless noted. Byte-exact copies were verified with `cmp` at extraction time.
 
+## root (the identity contract, Phase 0 of labs/prd-flowforge.md)
+
+| file                        | receipt                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `site.config.js`            | new (2026-10-29, Phase 0): THE site identity, authored once, read everywhere. Concern-named per the family convention (`crashtest.config.js` lives in five repos) - a product-named config would force prestruct and freestruct to depend on flowforge, inverting the engine-to-shell dependency (PRD 5.1). The two engine-owned identity files (prestruct's `web/ssr.config.js`, freestruct's `docs/freestruct.config.yml`) are DERIVED from it, so the engines keep reading exactly what they read and no engine depends on this repo. |
+| `scripts/flowforge-sync.mjs` | new (2026-10-29, Phase 0): fans the identity out to the surfaces that cannot import it (`docs/_config.yml`, `docs/freestruct.config.yml`, `web/public/robots.txt`, `web/public/site.webmanifest`). Deterministic (no wall clock); `--check` refuses a drifted file. |
+| `scripts/check-brand-census.mjs` | new (2026-10-29, Phase 0): the brand census gate - refuses an identity literal (site name + config-derived domain fragments) in any structural surface outside `site.config.js`, names file:line, strips comments, skips the sync-owned outputs. The teeth behind "one file, one rebrand" (PRD 8). |
+| `web/src/site.js`           | new (2026-10-29, Phase 0): the web bundle's single accessor for the identity (re-exports the root config + `routeMeta(path)`), so the deep relative path appears once. |
+
 ## docs/ (Jekyll rig)
 
 | file                        | receipt                                                                                      |

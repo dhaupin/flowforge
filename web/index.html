@@ -52,9 +52,9 @@
         golden: { dark: '#121011', light: '#f6f1e7' },
         jade:   { dark: '#121011', light: '#f6f1e7' }
       }
-      var scheme = localStorage.getItem('flowforge-paint-scheme') || 'iris'
+      var scheme = localStorage.getItem('site-paint-scheme') || 'iris'
       if (paper[scheme] && scheme !== 'iris') document.documentElement.dataset.scheme = scheme
-      var light = localStorage.getItem('flowforge-theme') === 'light'
+      var light = localStorage.getItem('site-theme') === 'light'
       if (light) document.documentElement.dataset.theme = 'light'
       var p = (paper[scheme] || paper.iris)[light ? 'light' : 'dark']
       document.currentScript.previousElementSibling.setAttribute('content', p)
