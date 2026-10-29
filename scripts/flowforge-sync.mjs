@@ -19,7 +19,24 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import yaml from 'js-yaml'
 import site from '../site.config.js'
+
+// A YAML scalar is unsafe unquoted when it contains a colon+space (the value
+// would read as a nested mapping - this exact class broke the Jekyll build:
+// the description's "from: landing" made docs/_config.yml unparseable), a
+// leading indicator, or a trailing space. Quote whenever in doubt: a quoted
+// string is always valid, and JSON.stringify gives the right escapes.
+const yamlStr = (v) => {
+  const str = String(v)
+  const unsafe =
+    /:\s/.test(str) ||           // colon+space -> nested mapping
+    /^[\s\-?:,\[\]{}#&*!|>'"%@`]/.test(str) || // leading indicator
+    /\s$/.test(str) ||            // trailing space
+    str === '' ||
+    /[\n\r\t]/.test(str)         // control chars -> must escape
+  return unsafe ? JSON.stringify(str) : str
+}
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -31,24 +48,24 @@ const TARGETS = [
   {
     path: 'docs/_config.yml',
     render: (s) => `${BANNER('site.config.js')}
-title: ${s.name}
-baseurl: "${s.docs.baseurl}" # the docs deploy path (GitHub Pages project path)
-url: "${s.docs.host}"
-description: ${s.description}
+title: ${yamlStr(s.name)}
+baseurl: ${yamlStr(s.docs.baseurl)} # the docs deploy path (GitHub Pages project path)
+url: ${yamlStr(s.docs.host)}
+description: ${yamlStr(s.description)}
 
 # Identity the layout renders (docs/_layouts/default.html reads these; the
 # brand census gate keeps the layout from hardcoding any of them).
-repo: ${s.repo}
-brand_accent: ${s.wordmark.accent}
-brand_rest: ${s.wordmark.rest}
-maker_label: ${s.maker.label}
-maker_url: ${s.maker.url}
-org_name: ${s.org.name}
-org_url: ${s.org.url}
-site_url: ${s.url}
-docs_url: ${s.docs.url}
-theme_key: ${s.theme.themeKey}
-scheme_key: ${s.theme.schemeKey}
+repo: ${yamlStr(s.repo)}
+brand_accent: ${yamlStr(s.wordmark.accent)}
+brand_rest: ${yamlStr(s.wordmark.rest)}
+maker_label: ${yamlStr(s.maker.label)}
+maker_url: ${yamlStr(s.maker.url)}
+org_name: ${yamlStr(s.org.name)}
+org_url: ${yamlStr(s.org.url)}
+site_url: ${yamlStr(s.url)}
+docs_url: ${yamlStr(s.docs.url)}
+theme_key: ${yamlStr(s.theme.themeKey)}
+scheme_key: ${yamlStr(s.theme.schemeKey)}
 
 markdown: kramdown
 highlighter: rouge
@@ -74,24 +91,24 @@ plugins:
     path: 'docs/freestruct.config.yml',
     render: (s) => `${BANNER('site.config.js')}
 site:
-  name: ${s.name}
-  url: ${s.docs.url}
-  description: ${s.description}
+  name: ${yamlStr(s.name)}
+  url: ${yamlStr(s.docs.url)}
+  description: ${yamlStr(s.description)}
 
 # Author identity - ships as a schema.org Person under "founder" on the
 # injected Organization JSON-LD block (the engine edition template carries the
 # {{authorJson}} seam).
 author:
-  name: ${s.org.name}
-  url: ${s.org.url}
+  name: ${yamlStr(s.org.name)}
+  url: ${yamlStr(s.org.url)}
 
 # Maintainer identity - custom JSON-LD appended after the built-in
 # Organization + WebSite pair (the legacy list form).
 jsonLd:
   - "@type": Person
-    name: ${s.author}
-    url: ${s.repo}
-    jobTitle: ${s.name} maintainer
+    name: ${yamlStr(s.author)}
+    url: ${yamlStr(s.repo)}
+    jobTitle: ${yamlStr(`${s.name} maintainer`)}
 
 twitter:
   card: summary_large_image
@@ -135,9 +152,24 @@ Sitemap: ${s.url}/sitemap.xml
 const check = process.argv.includes('--check')
 let drifted = 0
 
+// A generated YAML file that does not parse is worse than drift: Jekyll
+// refuses the WHOLE config and the docs lane goes dark (the exact failure the
+// "from: landing" description caused). Parse every YAML target before it can
+// be written or compared, and fail at cause with the file named.
+function assertParseable(rel, text) {
+  if (!rel.endsWith('.yml') && !rel.endsWith('.yaml')) return
+  try {
+    yaml.load(text)
+  } catch (e) {
+    console.error(`sync: ${rel} would not parse as YAML - fix site.config.js or the render (${e.message})`)
+    process.exit(1)
+  }
+}
+
 for (const t of TARGETS) {
   const abs = join(ROOT, t.path)
   const next = t.render(site)
+  assertParseable(t.path, next)
   const prev = existsSync(abs) ? readFileSync(abs, 'utf8') : null
   if (prev === next) {
     console.log(`sync: ${t.path} up to date`)

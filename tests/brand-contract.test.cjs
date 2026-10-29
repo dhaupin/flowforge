@@ -14,6 +14,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
+const yaml = require('js-yaml')
 
 const REPO = path.join(__dirname, '..')
 const SYNC = path.join(REPO, 'scripts', 'flowforge-sync.mjs')
@@ -44,6 +45,8 @@ function tempTree() {
   }
   fs.mkdirSync(path.join(dir, 'web', 'public'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'docs'), { recursive: true })
+  // sync imports js-yaml; the temp tree resolves deps the way an install would.
+  fs.symlinkSync(path.join(REPO, 'node_modules'), path.join(dir, 'node_modules'), 'dir')
   return dir
 }
 
@@ -109,4 +112,26 @@ test('ssr.config.js is a pure adapter: it has no identity literals of its own', 
 test('the one identity source is site.config.js (not a product-named config)', () => {
   assert.ok(fs.existsSync(path.join(REPO, 'site.config.js')), 'site.config.js must exist at the repo root')
   assert.ok(!fs.existsSync(path.join(REPO, 'flowforge.config.js')), 'a product-named config must not exist (PRD 5.1)')
+})
+
+test('every generated YAML surface parses (a colon in a value cannot break the docs lane)', () => {
+  // The regression this guards: site.config.js description contains
+  // "from: landing" - unquoted that reads as a nested mapping and Jekyll
+  // refuses the WHOLE config. sync must emit a YAML-safe scalar.
+  for (const rel of ['docs/_config.yml', 'docs/freestruct.config.yml']) {
+    const src = fs.readFileSync(path.join(REPO, rel), 'utf8')
+    assert.doesNotThrow(() => yaml.load(src), `${rel} must parse as YAML`)
+  }
+})
+
+test('sync quotes a value containing colon+space (the YAML-nesting trap)', () => {
+  const dir = tempTree()
+  let cfg = fs.readFileSync(path.join(dir, 'site.config.js'), 'utf8')
+  cfg = cfg.replace("name: 'flowforge',", "name: 'flow: forge',")
+  fs.writeFileSync(path.join(dir, 'site.config.js'), cfg)
+  const r = run(tempScript(dir, 'flowforge-sync.mjs'), [], dir)
+  assert.equal(r.code, 0, r.out)
+  const doc = yaml.load(fs.readFileSync(path.join(dir, 'docs', '_config.yml'), 'utf8'))
+  assert.equal(doc.title, 'flow: forge', 'a colon+space value must round-trip through the generated YAML')
+  fs.rmSync(dir, { recursive: true, force: true })
 })

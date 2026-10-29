@@ -4,7 +4,7 @@
 site:
   name: flowforge
   url: https://docs.creadev.org/flowforge
-  description: The shell the struct family ships sites from: landing + docs rig + CI/release plumbing, with brand as data.
+  description: "The shell the struct family ships sites from: landing + docs rig + CI/release plumbing, with brand as data."
 
 # Author identity - ships as a schema.org Person under "founder" on the
 # injected Organization JSON-LD block (the engine edition template carries the

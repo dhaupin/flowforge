@@ -2,9 +2,9 @@
 # Hand edits here are drift and fail `npm run sync:check`.
 
 title: flowforge
-baseurl: "/flowforge" # the docs deploy path (GitHub Pages project path)
-url: "https://docs.creadev.org"
-description: The shell the struct family ships sites from: landing + docs rig + CI/release plumbing, with brand as data.
+baseurl: /flowforge # the docs deploy path (GitHub Pages project path)
+url: https://docs.creadev.org
+description: "The shell the struct family ships sites from: landing + docs rig + CI/release plumbing, with brand as data."
 
 # Identity the layout renders (docs/_layouts/default.html reads these; the
 # brand census gate keeps the layout from hardcoding any of them).
