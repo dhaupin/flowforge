@@ -10,7 +10,9 @@ Healthy = the build's last line reads `N/N pages rendered` with N equal to your 
 
 ## 2. The docs (`docs/`, Jekyll + pagefind)
 
-GitHub Pages territory: `.github/workflows/docs-deploy.yml` runs gates -> Jekyll -> freestruct (pinned) -> pagefind -> Pages deploy. Set `docs/_config.yml`'s `url` + `baseurl` to YOUR deploy location FIRST - the layout composes canonical/OG/pagefind/logo paths from it. Without the pagefind index the search modal reports that honestly (it never pretends to search). The `paths:` filter means the workflow only fires on `docs/**` changes, so landing edits never cost a docs deploy.
+GitHub Pages territory: `.github/workflows/docs-deploy.yml` (a thin caller) hands off to the reusable `.github/workflows/docs-build.yml`, which runs gates -> Jekyll -> freestruct (pinned) -> pagefind -> Pages artifact upload. Set `docs/_config.yml`'s `url` + `baseurl` to YOUR deploy location FIRST - the layout composes canonical/OG/pagefind/logo paths from it. Without the pagefind index the search modal reports that honestly (it never pretends to search). The `paths:` filter means the workflow only fires on `docs/**` changes, so landing edits never cost a docs deploy.
+
+The build lane is a **reusable workflow** (issue #9): the runbook lives once in `docs-build.yml` (`on: workflow_call`, inputs `docs-path` / `ruby-version` / `node-version` / `pagefind-version` / `freestruct-version`), and each repo keeps only a thin caller that sets its own inputs, permissions, concurrency group, and deploy job. This replaced three hand-copied runbooks that had already drifted apart (Ruby 3.2 vs 3.4, upload-pages-artifact v3 vs v5, a pagefind scrape vs an npm pin). A sibling calls it with `uses: dhaupin/flowforge/.github/workflows/docs-build.yml@<ref>`; the caller must grant `pages: write` + `id-token: write` for the deploy half. The birth-gate checks the contract both ways (a local caller must point at a `workflow_call` file, and a reusable file must be called).
 
 ## 3. The staging branch (issue #30)
 

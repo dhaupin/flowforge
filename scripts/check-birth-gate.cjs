@@ -27,6 +27,11 @@
 //      SHA (with the human tag in a trailing comment). A moving `@v4` is a
 //      supply-chain hole: the ref can be repointed at any time, so the bytes
 //      CI runs are not the bytes anyone reviewed.
+//   6. Reusable-workflow contract (issue #9). A local `uses: ./...` must point
+//      at a file that exists AND declares `on: workflow_call`; a caller that
+//      points at a plain workflow fails at runtime with a confusing error, and
+//      a reusable workflow that is never called is dead weight. Both directions
+//      are checked so a thin-caller refactor cannot half-land.
 //
 // Usage: node scripts/check-birth-gate.cjs
 // Exit: 0 clean, 1 a check failed (file:line named), 2 the lane could not
@@ -139,6 +144,54 @@ for (const f of wfFiles) {
 if (!usesChecked) notes.push('pins: no action refs in the shell')
 else if (usesFloating) notes.push(`pins: ${usesChecked} action ref(s), ${usesFloating} FLOATING`)
 else notes.push(`pins: ${usesChecked} action ref(s), all SHA-pinned`)
+
+// --- 6. Reusable-workflow contract (issue #9) ------------------------------
+// Local `uses: ./path` refs must exist and declare on: workflow_call; and any
+// workflow_call workflow must be called by someone (no dead reusable lane).
+const reusableFiles = new Set()
+for (const f of wfFiles) {
+  let doc
+  try {
+    doc = yaml.load(fs.readFileSync(path.join(wfDir, f), 'utf8'))
+  } catch {
+    continue // unparseable files are already named by check 1; skip here
+  }
+  const on = doc && doc.on
+  // `on` may parse as the string 'on' key or a mapping; workflow_call may be
+  // null (bare) or a mapping with inputs.
+  if (on && typeof on === 'object' && Object.prototype.hasOwnProperty.call(on, 'workflow_call')) {
+    reusableFiles.add(f)
+  }
+}
+let localCallers = 0
+const localCallTargets = new Set()
+for (const f of wfFiles) {
+  const lines = fs.readFileSync(path.join(wfDir, f), 'utf8').split('\n')
+  lines.forEach((line, i) => {
+    const m = line.match(/^\s*(?:-\s*)?uses:\s*(\S+)/)
+    if (!m || !m[1].startsWith('./')) return
+    localCallers++
+    const rel = m[1].replace(/^\.\//, '')
+    localCallTargets.add(rel)
+    const target = path.join(REPO, rel)
+    if (!fs.existsSync(target)) {
+      problems.push(`.github/workflows/${f}:${i + 1}: uses: ${m[1]} points at a file that does not exist`)
+      return
+    }
+    if (!reusableFiles.has(path.basename(rel))) {
+      problems.push(`.github/workflows/${f}:${i + 1}: uses: ${m[1]} points at a workflow without \`on: workflow_call\` - it cannot be called (add the trigger or inline it)`)
+    }
+  })
+}
+const uncalledReusable = [...reusableFiles].filter(
+  (rf) => !localCallTargets.has(`.github/workflows/${rf}`) && !localCallTargets.has(rf),
+)
+for (const rf of uncalledReusable) {
+  problems.push(`.github/workflows/${rf}: declares \`on: workflow_call\` but no workflow calls it - dead reusable lane`)
+}
+if (localCallers || reusableFiles.size) {
+  notes.push(`reusable: ${localCallers} local call(s), ${reusableFiles.size} workflow_call file(s), ${uncalledReusable.length} uncalled`)
+}
 
 // --- report ----------------------------------------------------------------
 for (const n of notes) console.log(`BIRTH-GATE: ${n}`)

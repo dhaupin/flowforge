@@ -14,7 +14,7 @@ docs/                   the Jekyll docs rig
   _layouts/default.html header, sidebar, pagefind search, theme tokens
   _data/nav.yml         (yours to add) - sidebar sections come from here
 scripts/                the docs gates (frontmatter/links/style/fiction/liquid)
-.github/workflows/      docs-deploy.yml (Pages) + release.yml (npm OIDC)
+.github/workflows/      docs-deploy.yml (Pages, thin caller) + docs-build.yml (reusable lane) + release.yml (npm OIDC)
 labs/TASKS.md           the rolling work log - append entries as you ship
 labs/TASKS.md           assistant notes land here too (house log)
 MANIFEST.md             every extracted file -> source SHA + engine pins

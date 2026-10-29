@@ -485,3 +485,33 @@ The user asked for all three carry-forward options this session. Two landed; one
 - No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
 - `MANIFEST.md` - rows updated/added for `theme.js`, `SchemeSwitch.jsx`, the styles.css scheme axis, the two-axis `index.html` bootstrap, the docs-layout scheme row, `check-theme-parity.cjs`, `tests/theme-parity.test.cjs`, and the two workflow rows (also fixed a pre-existing merged `docs-deploy.yml`/`release.yml` row).
 - `CHANGELOG.md` - Added entries for the theme files + presets + gate; a Changed entry for the `staging` branch; a Blocked entry for `repair-404`.
+
+---
+
+### 2026-10-29 - session: issue #9, the docs lane promoted to a reusable workflow
+
+`docs-deploy.yml` was a per-repo one-off and the runbook it encoded had been hand-copied three times (flowforge / gistory / eyestruct) - and the copies had already drifted (Ruby 3.2 vs 3.4, upload-pages-artifact v3 vs v5, a pagefind scrape vs an npm pin). The issue asked to promote the lane to `on: workflow_call`.
+
+- `.github/workflows/docs-build.yml` (new) - the reusable lane. `on: workflow_call` with inputs `docs-path` (default `docs`), `ruby-version` (3.2), `node-version` (22), `pagefind-version` (`latest` scrapes the newest release; any other value installs verbatim - the npm-pin shape the drifted copies wanted), `freestruct-version` (`^1.1.0`); output `pagefind-version`. Carries the whole runbook once: checkout, Setup Ruby, Jekyll build, the token-auth pagefind scrape (the rate-limit receipt), the search index, Setup Node, the PINNED freestruct install + post-build SEO layer, and the Pages artifact upload. Actions stay SHA-pinned; a fresh `setup-node` pin joins the set.
+- `.github/workflows/docs-deploy.yml` - now a THIN CALLER (197 -> 55 lines): trigger, permissions (`contents: read` + `pages: write` + `id-token: write` - the caller grants the ceiling; the reusable half declares `contents: read` for itself), concurrency group, `build: uses: ./.github/workflows/docs-build.yml`, and the `deploy` job still gated to `main` (issue #30). The `paths:` filter gains `docs-build.yml` so a lane edit re-validates.
+- `scripts/check-birth-gate.cjs` - new **check 6**, the reusable-workflow contract (house rule 3): a local `uses: ./...` must point at a file that exists AND declares `on: workflow_call`, and a `workflow_call` file must be called by someone. Both directions, so a thin-caller refactor cannot half-land. The re-parse is guarded - an unparseable file is named by check 1 and skipped here (found by the new test, not by inspection).
+- `tests/birth-gate.test.cjs` (new) - 7 behavior tests: green on the live tree; caller -> `workflow_call` file (pass); caller -> non-`workflow_call` file (fail); caller -> missing file (fail); a `workflow_call` file nobody calls (fail, dead lane); a floating action pin (fail); the duplicate-YAML-key class (fail). Fixtures copy the gate into a temp tree and point `NODE_PATH` at the real `node_modules` so `js-yaml` resolves.
+- Negative-tested by hand too: each of the four contract failures exits 1 naming the file, and the restored tree exits 0.
+
+**Docs / receipts**
+
+- `DEPLOY.md` - section 2 now describes the thin-caller + reusable-lane split and the sibling call shape (`uses: dhaupin/flowforge/.github/workflows/docs-build.yml@<ref>`).
+- `MANIFEST.md` - new `docs-build.yml` row; `docs-deploy.yml` row rewritten as the thin caller; `check-birth-gate.cjs` row gains check 6; new `tests/birth-gate.test.cjs` row.
+- `README.md` + `AGENTS.md` - workflow lines updated.
+- `CHANGELOG.md` - Added entries (the reusable lane, the birth-gate test) + a Changed entry (the thin-caller refactor).
+
+**Gates (all green on the branch)**
+
+- `npm test` -> **36 pass / 0 fail** (was 29; +7 birth-gate tests).
+- `npm run check` -> PASS (six compile checks + birth-gate 4 workflows/5 checks incl. the new reusable contract + theme-parity PASS).
+- `npm run lint:docs` -> PASS.
+
+**House rules**
+
+- No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
+- This closes issue #9 - the rig's docs lane is a versioned call, not a fourth drifted copy.

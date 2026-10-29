@@ -11,7 +11,7 @@ Status: **0.9.0, scaffold cut.** The shell ships two sites (landing + docs) and 
 | `web/`           | the landing shell: prestruct-prerendered React/Vite app, light/dark theme switch (no-flash bootstrap, icon-as-action), tokens-only palette (dark + light), nav/sidebar/footer from one vocabulary file, island engine, placeholder pages + a highlighted terminal block |
 | `docs/`          | the Jekyll rig: fixed header (search > GitHub icon > theme switch > menu), slide-out sidebar, pagefind modal search (Cmd+K), Rouge token colors shared with the landing, freestruct SEO layer, sample page proving frontmatter + highlighting |
 | `scripts/`       | the docs gates: frontmatter, links (doubled-baseurl trap), style/voice, fiction signatures, the single-arg Liquid filter trap |
-| `.github/workflows/` | `docs-deploy.yml` (Jekyll + hardened pagefind scrape + PINNED freestruct layer + Pages), `release.yml` (npm Trusted Publishing OIDC template) |
+| `.github/workflows/` | `docs-deploy.yml` (thin caller: trigger + Pages deploy), `docs-build.yml` (reusable: Jekyll + hardened pagefind scrape + PINNED freestruct layer + Pages artifact), `release.yml` (npm Trusted Publishing OIDC template) |
 | `MANIFEST.md`    | the receipts: every extracted file -> its source repo+SHA, engine pins, and the one review rule for bumping them   |
 
 ## The map (with the sibling docs)
