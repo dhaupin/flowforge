@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+gem 'jekyll', '~> 4.3'
+gem 'jekyll-redirect-from'
+# bigdecimal: a BUNDLED gem on Ruby 3.4 (liquid 4.0.4 needs it) - declare it
+# here or the day a Gemfile.lock gets committed, CI goes dark with
+# "cannot load such file -- bigdecimal". Covers older local Rubies too.
+gem 'bigdecimal', '~> 3.1'

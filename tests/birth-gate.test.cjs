@@ -1,6 +1,6 @@
 'use strict'
 /**
- * Behavior tests for scripts/check-birth-gate.cjs (issues #4/#5, check 6 from
+ * Behavior tests for lib/gates/check-birth-gate.cjs (issues #4/#5, check 6 from
  * issue #9).
  *
  * The gate resolves paths from its own location, so fixtures copy the script
@@ -16,7 +16,7 @@ const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
 const ROOT = path.resolve(__dirname, '..')
-const GATE = path.join(ROOT, 'scripts', 'check-birth-gate.cjs')
+const GATE = path.join(ROOT, 'lib', 'gates', 'check-birth-gate.cjs')
 
 function runGate(scriptPath) {
   try {
@@ -30,17 +30,18 @@ function runGate(scriptPath) {
   }
 }
 
-// Build a minimal fixture tree: a scripts/ copy of the gate + the workflows
-// passed in (name -> source). Returns the fixture's gate path.
+// Build a minimal fixture tree: a lib/gates/ copy of the gate (plus the shared
+// lib/root.cjs it requires) + the workflows passed in (name -> source).
 function fixture(workflows) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'birth-gate-'))
-  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true })
+  fs.mkdirSync(path.join(dir, 'lib', 'gates'), { recursive: true })
   fs.mkdirSync(path.join(dir, '.github', 'workflows'), { recursive: true })
-  fs.copyFileSync(GATE, path.join(dir, 'scripts', 'check-birth-gate.cjs'))
+  fs.copyFileSync(path.join(ROOT, 'lib', 'root.cjs'), path.join(dir, 'lib', 'root.cjs'))
+  fs.copyFileSync(GATE, path.join(dir, 'lib', 'gates', 'check-birth-gate.cjs'))
   for (const [name, src] of Object.entries(workflows)) {
     fs.writeFileSync(path.join(dir, '.github', 'workflows', name), src)
   }
-  return path.join(dir, 'scripts', 'check-birth-gate.cjs')
+  return path.join(dir, 'lib', 'gates', 'check-birth-gate.cjs')
 }
 
 const SHA = '3d3c42e5aac5ba805825da76410c181273ba90b1'

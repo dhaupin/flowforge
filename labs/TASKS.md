@@ -515,3 +515,105 @@ The user asked for all three carry-forward options this session. Two landed; one
 
 - No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
 - This closes issue #9 - the rig's docs lane is a versioned call, not a fourth drifted copy.
+
+---
+
+### 2026-10-29 - session: productization PRD (flowforge as a real tool)
+
+Owner asked what actually ships in the npm package and how to make it a system users pull in and run, not a copy-and-hand-edit template. Answered by inspection: `package.json` has no `bin`/`main`/`exports` (nothing runs on install), brand literals are hardcoded across ~18 shipped files in three languages, and the tool shares a tree with its own dogfood deployment. Owner confirmed the direction (full CLI, `example/` folder like prestruct, GH "use this template", npm + GH release on tag like eyestruct) and asked to write it up.
+
+- **`labs/prd-flowforge.md`** (new) - the productization PRD: two-identity model (rig vs site), the `site.config.js` contract, the five verbs (`create`/`sync`/`build`/`check`/`doctor`), the package layout (`bin/` + `lib/` + `templates/site/` + `example/`), the derivation model + brand census gate, the three distribution channels, and four migration phases (Phase 0 brand contract first).
+- **Config name resolved to `site.config.js`** (owner call, same session): the first draft said `flowforge.config.js`, but a product-named config would force prestruct and freestruct to depend on flowforge - inverting the engine-to-shell dependency (this repo already carries two engine-owned identity files: `web/ssr.config.js` for prestruct, `docs/freestruct.config.yml` for freestruct). The family convention is concern-named configs (`crashtest.config.js` lives in five repos), so the neutral `site.config.js` wins: one authored file, three readers, engines stay product-agnostic (flowforge derives the two engine files in `sync`). PRD section 5.1.
+- **Surveyed monoforge** (`dhaupin/gistory@main:monoforge-staging`) as the sibling precedent: it already ships `bin/forge.mjs`, `src/` verbs (stamp/doctor/lock/cut), `templates/` with `__TOKEN__` substitution, `factory.json`, and a `.monoforge-stamp.json` manifest that scopes the doctor's truth-slot scan. The PRD aligns flowforge's config vocabulary with `factory.json` and records the two ways the tools relate (flowforge as a monoforge provider, or standalone config-compatible - lean: standalone first, provider once the profile is proven).
+- **Receipts read**: eyestruct `publish.yml` (the npm OIDC + GH release + verify ladder the owner asked to mirror) + `scripts/release-notes.cjs` (release notes extracted from the CHANGELOG, refuses empty); prestruct `package.json` + `bin/cli.mjs` + `init/` + `example/` (the layout precedent, and the "we can do it better" note: our example is tool-generated in CI so it cannot drift).
+- Gates green after the add: `npm run lint:docs` PASS (fiction gate now 43 files), `npm run check` PASS. No version bump (0.9.0 = 0.9.0); no code change yet - PRD only, awaiting owner review on the open questions (section 13) before Phase 0.
+
+---
+
+### 2026-10-29 - session: Phase 0 - the brand contract (site.config.js)
+
+Owner approved the PRD path and asked to push + start Phase 0. Also asked whether `site.config.js` collides outside the ecosystem, and asked for an issue so the "shared schema package" idea is not forgotten.
+
+- **Naming research (answer: it helps, cannot hurt).** npm `site.config` + `site-config` both FREE (404). GitHub has ~77 repos with a root `site.config.js` (small portfolio/blog sites; no dominant tool). Major SSGs all use their own: `astro.config.mjs`, `docusaurus.config.js`, `eleventy.config.js`, `.vitepress/config.js`, `next.config.js` - none claims `site.config.js`. Config filenames are repo-local (not a global namespace), so a collision is a non-event; a bespoke name would be more distinctive but less self-explanatory. Keep `site.config.js`.
+- **Issue #32 created** - "Graduate site.config.js to a shared schema package (prestruct + freestruct read it directly)". Records the next step (one source, three readers, no derivation) with the trigger (a second consumer, or friction) per the family rule of three. https://github.com/dhaupin/flowforge/issues/32
+- **Pushed staging** (`819b5f2`) - PRD + the config rename. (First push reported OK but the local tracking ref was stale; re-fetched, remote confirmed at `819b5f2` via the API.)
+- **Phase 0 shipped:**
+  - `site.config.js` (root) - THE identity source (name, wordmark, tagline, description, url, repo, author, maker, org, docs block, theme keys, nav, footer extras, routes, 404). Added to `package.json` `files`.
+  - `web/src/site.js` - the web bundle's one accessor (+ `routeMeta(path)`).
+  - `web/ssr.config.js` - now an ADAPTER over site.config.js (prestruct reads what it always read; no engine change, no engine depends on flowforge).
+  - `web/src/components/navItems.js`, `Nav.jsx`, `Footer.jsx`, `pages/Home|Terms|Privacy.jsx` - identity from the config.
+  - `web/src/theme.js` - keys sourced from config, renamed to the neutral `site-theme`/`site-paint-scheme` (protocol, not brand); `web/index.html` + docs layout mirror the rename.
+  - `docs/_layouts/default.html` - identity now Liquid (`{{ site.* }}`); nav URLs baseurl-relative (layout prefixes `site.baseurl`).
+  - `docs/_data/nav.yml` - baseurl-relative, brand-free.
+  - `scripts/flowforge-sync.mjs` + `npm run sync`/`sync:check` - generates `docs/_config.yml`, `docs/freestruct.config.yml`, `web/public/robots.txt`, `web/public/site.webmanifest`; deterministic; `--check` refuses drift. Wired into `npm run check`.
+  - `scripts/check-brand-census.mjs` - the teeth: refuses an identity literal in any structural surface outside `site.config.js`, names file:line, strips comments, skips the sync-owned outputs.
+  - `tests/brand-contract.test.cjs` - 8 behavior tests (live pass, determinism, drift fails, planted literal fails, comments ignored, ssr adapter literal-free, no product-named config).
+- **Verification:** `npm test` 44 pass / 0 fail (was 36; +8). `npm run check` green (sync:check PASS, BRAND-CENSUS PASS). `npm run lint:docs` green (fiction gate now 48 files). **`npm run build --prefix web` -> 3/3 pages rendered**, inject-brand + repair-404 PASS; dist carries the config-derived wordmark/title/canonical and the neutral keys.
+- **Receipts:** CHANGELOG.md (Added/Changed block), MANIFEST.md (new "root (the identity contract)" table), AGENTS.md (layout tree + house rule 1 rewritten for the one-file rebrand). No version bump (0.9.0 = 0.9.0).
+- **CI catch (same session).** The first Phase 0 push went red on `Deploy Docs` -> `Build Jekyll`. Cause: `site.config.js`'s description contains `from: landing`; emitted unquoted into `docs/_config.yml`, the `: ` read as a nested mapping and Jekyll refused the whole config. Fixed in `flowforge-sync.mjs`: a `yamlStr()` helper quotes any unsafe scalar (colon+space, leading indicator, trailing space, control chars), and every YAML target is `yaml.load()`-ed before it is written (fail at cause, file named). Added two tests (both generated YAML files parse; a colon+space value round-trips). `npm test` 46/46.
+- **Next (Phase 1, not started):** split tool from site - `templates/site/`, `lib/`, `example/`. Awaiting owner review.
+
+---
+
+### 2026-10-29 - session: the parent product is railyard (mounts proto-spec)
+
+Owner asked to (a) settle the dogfood folder, (b) adopt the `mounts/[public,private,local]` system, and (c) name the factory product that drives flowforge + monoforge together.
+
+- **Correction accepted: `/mounts` is not law.** I first read gistory's `mounts/README.md` as a frozen family spec and argued it could not apply to flowforge. Owner corrected: it is a proto-spec the family is building *alongside* monoforge + flowforge, and gistory is only the first testbed (it grew monoforge from a PRD inside itself). So flowforge and monoforge can share a `mounts/` structure - nothing forbids it.
+- **Receipts read** (`dhaupin/gistory@main`): `mounts/README.md` (the three tiers + `boot/` carry folders + the "staging trees stay where they are, `mounts/` holds PAYLOADS only" contract), `mounts/state.json` (`"tiers": ["public","private","local"]`; `monoforge` + `poststruct` both `tier: public`), `mounts/public/monoforge/boot/README.md` (tarball-first landing, sha-gated), and `monoforge-staging/AGENTS.md` + `package.json` + tree. The parity ask ("models/mounts/packs rigs all speak public/private/local the same way") is filed to vant + packstruct.
+- **Option 1 confirmed: the dogfood stays at `web/` + `docs/`** - no `example/` folder. Receipt: `monoforge-staging/web` is the same shape (prestruct landing at `web/`, docs engine beside it). PRD sections 7 + 9 rewritten; section 13 Q1 resolved.
+- **Product named: `railyard`** (owner call). Verified free: `dhaupin/railyard` (404), npm `railyard` is TAKEN but irrelevant - railyard is a **service, not an npm package** (the components are the packages; npm `railyard` is a dead "generic railyard parser", 23 dl/mo, last publish 2022). Collision scan via DuckDuckGo: existing "railyard" hits are all real railroad yard-management software (a different domain) plus a data-centre rack planner; nothing in the dev-tooling space. The name fits the container role - a yard is where forges sit and staged work is switched/dispatched - where a `-forge` name would read as a third sibling. PRD section 11.1 added; section 13 Q7 resolved.
+- **mounts/ recorded as the shared proto-spec** (PRD section 11.2): three tiers, one `state.json`; railyard is the first real home, with all three tiers **visible at first** (the `private/` + `local/` gitignore lines written but commented out, flipped private later without a migration).
+- **No version bump** (0.9.0 = 0.9.0); labs/PRD only, no code change. PRD-only edits do not touch CHANGELOG (not a versioned surface).
+- **Next:** owner to create `dhaupin/railyard`; then scaffold its skeleton (`mounts/{public,private,local}` + commented gitignore + `factory.json` + PRD stub), and either start flowforge Phase 1 or hold until railyard's shape is set.
+
+### 2026-10-29 - session: railyard skeleton landed
+
+Owner created `dhaupin/railyard` (private, access confirmed: push permission, default branch `main`, empty). Scaffolded and pushed the skeleton as `c8d10e3`.
+
+- **railyard skeleton** (`dhaupin/railyard@c8d10e3`): `factory.json` (name, species "the forge yard", pitch, `siteDomain` railyard.creadev.org, version 0.9.0), `mounts/README.md`, `mounts/state.json` (`"tiers": ["public","private","local"]`; `flowforge` + `monoforge` registered as the first two public mounts, `tree` + `repo` per mount), `mounts/public/<mount>/boot/README.md`, `mounts/{private,local}/.gitkeep`, `.gitignore` (the `private/` + `local/` lines written but COMMENTED - all three tiers visible while the spec is young), plus README, AGENTS, CHANGELOG, LICENSE, and a PRD stub.
+- **Receipts** (dhaupin/gistory@main): `mounts/README.md` + `mounts/state.json` (the proto-spec, 2026-10-28), `mounts/public/monoforge/boot/README.md` (tarball-first landing). railyard's `mounts/README.md` records the proto-spec provenance and the parity ask to vant + packstruct.
+- **No payloads yet** - the mounts are registered, not landed. monoforge's move out of gistory (owner-driven: an agent cuts the staging tar) is what lands the first boot bytes.
+- **Next:** (3) monoforge staging tar out of gistory onto `dhaupin/monoforge` staging (owner will signal when the tar is ready); (2) flowforge Phase 1 (split tool from site).
+
+---
+
+### 2026-10-29 - session: flowforge Phase 1 - split tool from site
+
+Phase 1 of the PRD: separate the tool (versioned once, imported by adopters) from the site (the dogfood, left in place). Landed on `staging`; no version bump.
+
+- **`lib/` - the tool half.** `git mv` moved the whole `check-*.cjs` family to `lib/gates/`, `scripts/flowforge-sync.mjs` -> `lib/sync.mjs`, and `lint-packs.cjs`/`ship-from-download.cjs`/`unwrap-prose.cjs` -> `lib/`. The gates reach an adopter by `npm update` (the PRD 7 reason for `lib/` over a per-site copy).
+- **`lib/root.cjs` + `lib/root.mjs` - the root resolver.** Every gate resolved `path.resolve(__dirname, '..')`, true only while the gate sat beside the site it checks. The resolver walks up to the nearest `site.config.js` (skipping candidates under `node_modules`, so the tool's own copy never wins) with a `--root <dir>` override for tests; the CJS + ESM twins let both gate families share one rule. `check-docs-links.cjs` also stopped hardcoding `SITE_PREFIX = '/flowforge'` - it now reads `baseurl` from the generated `docs/_config.yml`, so the gate carries no adopter brand.
+- **`lib/template.mjs` + `templates/site/` - the copy source, GENERATED.** `npm run template` builds `templates/site/` from the dogfood tree with the identity swapped for monoforge-convention tokens (`__NAME__`, `__SITE_URL__`, `__DOCS_URL__`, `__REPO_URL__`, `__AUTHOR__`, `__ORG_NAME__`, `__ORG_URL__`, `__MAKER_LABEL__`, `__DOCS_HOST__`, `__DOCS_BASEURL__`). Generated, not hand-kept: a hand-maintained duplicate would reintroduce exactly the churn the dogfood-in-place call avoids. `npm run template:check` (in `npm run check` + CI) refuses a drifted or stale template; the generator refuses to emit if any dogfood identity literal survives tokenization. Sync-owned outputs are excluded (the adopter regenerates them). Token convention transcribed from monoforge's `src/stamp.mjs`.
+- **Dogfood unchanged in place** (`web/` + `docs/` + `site.config.js`), per the owner call; receipt: `dhaupin/gistory@main:monoforge-staging/` keeps its dogfood at `web/` + `docs/`.
+- **One brand literal a rebrand would have missed:** `web/public/brand/flowforge-logo.jpg` -> `logo.jpg`. A brand name in a filename is invisible to the census gate, so it was the one identity string the gate could not catch.
+- **Verification:** `npm test` 51 pass / 0 fail (was 46; +5 template tests). `npm run check` green (birth-gate, sync:check, **template:check**, BRAND-CENSUS). `npm run lint:docs` green. `npm run build --prefix web` -> **3/3 pages rendered**, inject-brand + repair-404 PASS. Jekyll is CI's job (no local bundler in the sandbox).
+- **Receipts:** CHANGELOG.md ("Phase 1 - split tool from site"), MANIFEST.md (new "lib/ (the tool)" table + moved rows + the logo rename), AGENTS.md (layout tree + rule 3), README.md (box table + commands), DEPLOY.md (local-check paths), labs/prd-flowforge.md (sections 7 + 9 rewritten for the landed shape and the generated-template decision). No version bump (0.9.0 = 0.9.0).
+- **Still open:** file the "site.config.js as a family-shared schema package" issue (owner asked explicitly); Phase 2 (the `bin/flowforge.mjs` CLI + the five verbs).
+
+---
+
+### 2026-10-29 - session: the release ladder adopted from eyestruct
+
+Scope, per the owner: "we can apply anything you find to monoforge + railyard + flowforge. Use eyestruct as a template (its workflows/ci works, it's been updated recently)." So eyestruct's `.github/workflows/` and its two generic scripts are the template; adopt the applicable parts here. Receipts: `dhaupin/eyestruct@4e2b552` (`.github/workflows/publish.yml`, `scripts/release-notes.cjs`, `scripts/verify-release.cjs`, `tests/release-verify.test.js`).
+
+- **`release.yml` is now the 3-job ladder** (publish / release / verify) plus a `verify-only` dispatch mode, transcribed from `dhaupin/eyestruct@4e2b552`. The gap the shape closes (eyestruct's 1.0.0 cut proved it): a publish step can go green while the registry result is wrong, because nothing asserted the tarball between proof-of-publish and proof-of-work. The publish job keeps the OIDC trusted-publishing publish and the 0.x + tag==version gate; the release job cuts the GH release from the tag with notes extracted from the changelog; the verify job re-proves the cut against npm and the GH release.
+- **`lib/release-notes.cjs`** (the release-body extractor) and **`lib/verify-release.cjs`** (the pack/npm/gh trust ladder) are the two generic scripts, identical across the family. Two local additions to the ladder over the upstream copy: a named `--allow` prefix list (this shell ships the whole rig on purpose: `web/`, `docs/`, `tests/`, `labs/`, `packs/`, `templates/`, `.github/`) and a named SKIP when a package declares no `main`/`exports`/`bin` (nothing to load; this shell is that shape). Fixed over the upstream `release-notes.cjs`: the newest section is also the last heading on the first cut, so an absent following heading now slices to EOF instead of erroring.
+- **`tests/release-verify.test.cjs`** runs the pack ladder OFFLINE every push (the standing receipt eyestruct carries): a positive case over real `npm pack` output and a negative case refusing a doctored tarball by name, so the contents assertions do not live only on release days.
+- **`CHANGELOG.md` headings normalized** to the family keep-a-changelog shape (`## [Unreleased]`, `## [0.9.0]`) so `lib/release-notes.cjs` can slice the release body. (Upstream eyestruct/poststruct/gistory already use the bracketed form; flowforge was the odd one.)
+- **`lib/gates/check-birth-gate.cjs` serde check narrowed** to git verbs that WRITE a git dir (`init`/`add`/`commit`/`-C`). The old heuristic matched any script that mentioned `git` + `tar`, which flagged the new `lib/verify-release.cjs` (it only READS history: `git archive`, `git rev-parse`). Read-only verbs never mutate the tree being packed, so the ladder is not that class.
+- **Verification:** `npm test` 53 pass / 0 fail (was 51; +2 release-verify). `npm run check` green (birth-gate, sync:check, template:check, BRAND-CENSUS). `lib/verify-release.cjs --pack` on a real `npm pack` of this tree PASSes the whole ladder.
+- **Not adopted here, on purpose:** the docs lane. flowforge already carries the reusable `docs-build.yml` + thin-caller `docs-deploy.yml` (issue #9), which is a stronger shape than eyestruct's inline `docs.yml`; there is nothing to pull in that direction. The `publish.yml` name is `release.yml` here (the existing flowforge convention) - the shape is eyestruct's, the filename stays.
+- **No version bump** (0.9.0 = 0.9.0); this is CI/plumbing, not a released surface.
+
+---
+
+### 2026-10-29 - session: the frontmatter gate gets YAML teeth (rule #3)
+
+monoforge's `docs/index.md` shipped with `description: slots: generated by the factory` - an unquoted scalar carrying a colon-space. YAML reads that as a nested mapping, the frontmatter block fails to parse, and Jekyll drops the WHOLE block: no layout, no head injection, a page rendered without its own chrome. Every `check-docs-frontmatter` gate in the family (vant -> crashtest -> eyestruct -> monoforge -> flowforge) regex-scanned for `key: value` and never noticed, because a regex scan says nothing about whether YAML parses. Caught in monoforge, so it becomes a gate (house rule #3).
+
+- **`lib/gates/check-docs-frontmatter.cjs`** - added a dependency-free scalar check. Every frontmatter field value must be a valid plain YAML scalar: an unquoted colon-space (`: `), an unquoted ` #` comment start, a leading YAML indicator, or an unterminated quote is refused by name (file:line). The check scans EVERY top-level field, not only the REQUIRED four - the monoforge bug landed in `description`, which a variant gate that did not require that field would have scanned past. Dependency-free on purpose: the gate rides a zero-dep tool tree and a stamped repo with no install step, so it cannot lean on `js-yaml`.
+- **`tests/docs-frontmatter.test.cjs`** - the gate's scalar leg, four behavior tests: a clean page passes, an unquoted colon-space in a required field is refused by name, the same in a NON-required field is refused too (the monoforge shape), and a quoted colon-space stays lawful.
+- **Propagation:** the gate lives in `lib/gates/` and reaches every adopter through `npm update`, so this fix is not a per-site copy. The same fix landed in monoforge's `scripts/` + `templates/scripts/` copies (that repo's `templates/` is the stamp source, so a stamped repo inherits it from birth).
+- **Verification:** `npm test` 53 -> 57 pass / 0 fail. `npm run lint:docs` green. The gate bites on a planted colon-space in both the dogfood tree and a fixture.
+- **No version bump** (0.9.0 = 0.9.0); a gate fix, not a released surface.

@@ -5,12 +5,14 @@
  */
 import { Link } from 'react-router-dom'
 import usePageMeta from '../hooks/usePageMeta.js'
+import site, { routeMeta } from '../site.js'
 
 export default function Privacy() {
+  const meta = routeMeta('/privacy')
   usePageMeta({
     path: '/privacy',
-    title: 'Privacy | flowforge',
-    description: 'What this site collects: nothing hidden, no tracking states to find.',
+    title: meta.title,
+    description: meta.description,
   })
   return (
     <section className="section" style={{ paddingTop: 56 }}>

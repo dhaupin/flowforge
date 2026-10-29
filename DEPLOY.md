@@ -37,10 +37,12 @@ The Version protocol (also in [AGENTS.md](./AGENTS.md)): bump `package.json` + `
 ## 5. Local checks before any push
 
 ```bash
-# the five docs gates + liquid trap (fast, pure node)
-node --check scripts/*.cjs && node scripts/check-docs-frontmatter.cjs \
-  && node scripts/check-docs-links.cjs && node scripts/check-docs-style.cjs \
-  && node scripts/check-fiction-signatures.cjs && node scripts/check-jekyll-filters.cjs
+# the docs gates + liquid trap + theme parity (fast, pure node)
+node --check lib/gates/*.cjs && node lib/gates/check-docs-frontmatter.cjs \
+  && node lib/gates/check-docs-links.cjs && node lib/gates/check-docs-style.cjs \
+  && node lib/gates/check-fiction-signatures.cjs && node lib/gates/check-jekyll-filters.cjs
+
+# or just the full battery (what CI runs): npm test && npm run check && npm run lint:docs
 
 # the shell, for real
 npm install --prefix web && npm run build --prefix web

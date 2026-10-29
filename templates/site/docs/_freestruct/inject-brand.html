@@ -1,0 +1,60 @@
+<!-- freestruct SEO template - __NAME__ ENGINE edition (issue #11).
+     Trimmed-head contract (issue #3, freestruct 1.1.0): the Jekyll layout
+     emits title + description ONLY, so this template carries the WHOLE
+     engine surface the layout dropped - canonical + the og:title /
+     og:description / og:url / og:type / og:site_name set (per-page
+     placeholders). og:image ships only when the config's og.image lands
+     (documented adopter homework; the engine strips the line when empty).
+     The JSON-LD is the ENGINE edition, not the shell edition: the
+     Organization block carries the {{authorJson}} founder seam and a
+     WebSite block rides the {{searchActionJson}} seam, so a config author
+     renders a founder Person instead of the shell block's empty
+     Organization (the shape that left eyestruct founderless until
+     c81b07a). The shell-edition SoftwareApplication block is retired.
+     Placeholders honored: {{pageTitle}}, {{pageDescription}}, {{pageUrl}},
+     {{canonicalUrl}}, {{siteUrl}}, {{siteName}}, {{siteDescription}},
+     {{twitterCard}}, {{ogImageFull}}, {{ogType}}, {{ogLocale}},
+     {{authorJson}}, {{searchActionJson}}, {{siteNameJson}}, {{siteUrlJson}},
+     {{siteDescriptionJson}}. -->
+
+<meta name="description" content="{{pageDescription}}">
+<link rel="canonical" href="{{canonicalUrl}}">
+
+<!-- Open Graph -->
+<meta property="og:title" content="{{pageTitle}}">
+<meta property="og:description" content="{{pageDescription}}">
+<meta property="og:url" content="{{pageUrl}}">
+<meta property="og:site_name" content="{{siteName}}">
+<meta property="og:type" content="{{ogType}}">
+<meta property="og:locale" content="{{ogLocale}}">
+<meta property="og:image" content="{{ogImageFull}}">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="{{twitterCard}}">
+<meta name="twitter:title" content="{{pageTitle}}">
+<meta name="twitter:description" content="{{pageDescription}}">
+
+<!-- JSON-LD - engine edition (Organization + WebSite pair, {{authorJson}}
+     founder seam, {{searchActionJson}} seam empty unless the config wires a
+     search endpoint - no fake ?s= action for a pagefind modal) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "{{siteNameJson}}",
+  "url": "{{siteUrlJson}}",
+  "description": "{{siteDescriptionJson}}"{{authorJson}}
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{siteNameJson}}",
+  "url": "{{siteUrlJson}}"{{searchActionJson}}
+}
+</script>
+
+<!-- injected by freestruct: https://github.com/__AUTHOR__/freestruct (npm
+     semver pin ^1.1.0 since issue #3 - the PINNED lesson stands) -->

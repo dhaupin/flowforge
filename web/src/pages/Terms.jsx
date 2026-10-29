@@ -5,12 +5,14 @@
  */
 import { Link } from 'react-router-dom'
 import usePageMeta from '../hooks/usePageMeta.js'
+import site, { routeMeta } from '../site.js'
 
 export default function Terms() {
+  const meta = routeMeta('/terms')
   usePageMeta({
     path: '/terms',
-    title: 'Terms | flowforge',
-    description: 'Terms of use for the flowforge shell and this site.',
+    title: meta.title,
+    description: meta.description,
   })
   return (
     <section className="section" style={{ paddingTop: 56 }}>

@@ -1,6 +1,6 @@
 'use strict'
 /**
- * Behavior tests for scripts/ship-from-download.cjs (the generic phone
+ * Behavior tests for lib/ship-from-download.cjs (the generic phone
  * publish lane). Temp dirs only, fake npm runner (the runner seam), no
  * network. The lane is family-reusable - it stages ANY npm package tree,
  * so these fixtures use an invented package name deliberately (`lib-x` /
@@ -15,7 +15,7 @@ const assert = require('node:assert')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
-const { ship, tokenProblems, expandHome, TOKEN_ENV, TOKEN_ENV_ALIAS } = require('../scripts/ship-from-download.cjs')
+const { ship, tokenProblems, expandHome, TOKEN_ENV, TOKEN_ENV_ALIAS } = require('../lib/ship-from-download.cjs')
 
 function tmp() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'ship-lane-'))

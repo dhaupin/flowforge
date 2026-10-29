@@ -53,7 +53,7 @@ jobs:
       - name: Node test spine
         run: npm test
 
-      # The five scripts/ gates compile then run (frontmatter, links, style,
+      # The five lib/gates gates compile then run (frontmatter, links, style,
       # fiction signatures, Liquid filters) plus the birth-gate lane
       # (flowforge#5: YAML-parse every workflow, mount independence, gc-safe
       # serde, determinism note). Same ritual as the README.
@@ -61,7 +61,7 @@ jobs:
         run: npm run check && npm run lint:docs
 
       # The landing shell builds through the engine's own gates: prestruct
-      # build, then scripts/repair-404.cjs (the prestruct#33 assert-clean
+      # build, then web/scripts/repair-404.cjs (the prestruct#33 assert-clean
       # repair - any leftover $1/$2, missing description, or off-origin
       # canonical exits 1 and red-lights this job).
       - name: Install web deps
@@ -85,7 +85,7 @@ jobs:
         env:
           JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # packstruct lint via the WRAPPER VERB (issue #12): scripts/lint-packs.cjs
+      # packstruct lint via the WRAPPER VERB (issue #12): lib/lint-packs.cjs
       # runs packstruct over the repo's own install (node_modules/.bin first,
       # then PATH), default dir = the packs ROOT (the packs/public footgun
       # reads as "0 packs checked"). A manifest declaring an entry that

@@ -1,6 +1,6 @@
 'use strict'
 /**
- * Behavior tests for scripts/check-theme-parity.cjs (issue #20).
+ * Behavior tests for lib/gates/check-theme-parity.cjs (issue #20).
  *
  * The gate reads the repo's real scheme surfaces, so these tests exercise it
  * against the live tree (green) and against synthetic fixtures built in a
@@ -15,7 +15,7 @@ const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
 const ROOT = path.resolve(__dirname, '..')
-const GATE = path.join(ROOT, 'scripts', 'check-theme-parity.cjs')
+const GATE = path.join(ROOT, 'lib', 'gates', 'check-theme-parity.cjs')
 
 // Run the gate FROM THE FIXTURE TREE (it resolves paths from its own location),
 // so fixtures must copy the script in - the live-tree test runs the real one.
@@ -33,13 +33,14 @@ function fixture({ schemes, styles, docs }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'theme-parity-'))
   fs.mkdirSync(path.join(dir, 'web', 'src'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'docs', '_layouts'), { recursive: true })
-  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true })
-  fs.copyFileSync(GATE, path.join(dir, 'scripts', 'check-theme-parity.cjs'))
+  fs.mkdirSync(path.join(dir, 'lib', 'gates'), { recursive: true })
+  fs.copyFileSync(path.join(ROOT, 'lib', 'root.cjs'), path.join(dir, 'lib', 'root.cjs'))
+  fs.copyFileSync(GATE, path.join(dir, 'lib', 'gates', 'check-theme-parity.cjs'))
   fs.writeFileSync(path.join(dir, 'web', 'src', 'theme.js'),
     `export const SCHEMES = [${schemes.map((s) => `'${s}'`).join(', ')}]\n`)
   fs.writeFileSync(path.join(dir, 'web', 'src', 'styles.css'), styles)
   fs.writeFileSync(path.join(dir, 'docs', '_layouts', 'default.html'), docs)
-  return path.join(dir, 'scripts', 'check-theme-parity.cjs')
+  return path.join(dir, 'lib', 'gates', 'check-theme-parity.cjs')
 }
 
 const DARK = (n) => `html[data-scheme="${n}"] { --accent: #111; --accent-deep: #222; }`
