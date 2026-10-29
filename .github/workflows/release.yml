@@ -7,6 +7,18 @@ name: release
 # re-push the tag - a failed run cannot be re-run directly:
 #   git push origin :refs/tags/vX.Y.Z && git push origin vX.Y.Z
 #
+# The publish ladder (flowforge#23 + #29, the family rule):
+#   A publish that cannot state what it gates on does not publish.
+#   - prepublishOnly (package.json) runs the repo's OWN battery on every
+#     `npm publish` - a red battery cannot mint a tarball, on any machine,
+#     CI or phone. It is never a stub (`echo ok` is read as honest).
+#   - The gate below refuses 0.x (the family ladder: 0.x is the manual ship
+#     lane) and, on a tag push, refuses a tag that disagrees with the
+#     packaged version. Every github context value reaches the script
+#     through env, never inline interpolation - an expression-injected tag
+#     name is the classic Actions injection class.
+#   - Actions are pinned by SHA, not a moving major (issue #6).
+#
 # Adapt `on.push.tags` / the publish dir if your package is not at the repo
 # root. packageManager line: set to your actual package manager + version
 # (corepack reads it; keep it exact, npm@<version> is checked against
@@ -26,14 +38,39 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm-publish   # optional: gate releases behind an environment
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      # - name: Install + test (uncomment and tailor)
-      #   run: npm ci && npm test
+      - name: npm floor for trusted publishing (11.5.1+)
+        run: npm install -g npm@^11
+
+      - name: the gate - 0.x refused, tag == packaged version
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -e
+          V="$(node -p "require('./package.json').version")"
+          case "$V" in
+            0.*) echo "publish gate: refusing $V - the OIDC lane serves 1.0.0+ only (the family release ladder: 0.x is the manual ship lane)"; exit 1 ;;
+          esac
+          if [ "$EVENT_NAME" = "push" ] && [ "$TAG_REF" != "v$V" ]; then
+            echo "publish gate: refusing - tag $TAG_REF does not equal the packaged version v$V (a tag that lies about its version never cuts)"; exit 1
+          fi
+          echo "publish gate: $TAG_REF passes the 0.x refusal and the tag==version gate"
+
+      - name: Install (hermetic when a lockfile ships)
+        # The shell ships a root package-lock.json (one devDep: js-yaml, the
+        # birth-gate parser), so this is a real hermetic `npm ci`. Adopters
+        # with no root deps ship no lockfile and get the no-op branch.
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-fund --no-audit
+          else echo "no root package-lock.json - nothing to install at the root"; fi
 
       - name: npm publish (OIDC - no token secret involved)
+        # prepublishOnly rides this automatically: npm test && npm run check
+        # && npm run lint:docs. A dirty or unproven tree cannot pack.
         run: npm publish --provenance --access public

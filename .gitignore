@@ -1,0 +1,20 @@
+# node_modules (web/ carries its own copy too)
+node_modules/
+web/node_modules/
+
+# build output
+web/dist/
+dist/
+
+# local extension packs (packs/public/ is tracked; packs/local/ is private)
+packs/local/
+
+# Local docs-preview toolchain (issue #22): the Jekyll preview recipe runs
+# from a scratch copy of docs/ with Bundler's path OUTSIDE the repo, so none
+# of these should ever appear - belt-and-suspenders so an accidental in-tree
+# build taints nothing. If your repo intentionally commits a docs
+# Gemfile.lock (this rig does not - CI resolves fresh), drop that one line.
+docs/.bundle/
+docs/vendor/
+docs/_site/
+docs/Gemfile.lock

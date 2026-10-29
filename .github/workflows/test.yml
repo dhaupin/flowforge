@@ -35,15 +35,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
 
+      # Hermetic install against the committed root lockfile (the one root
+      # devDependency is js-yaml, for the birth-gate's YAML parse).
+      - name: Install (root, hermetic)
+        run: npm ci --no-fund --no-audit
+
+      # The node:test spine: the version-truth census (flowforge#28) and the
+      # ship-from-download lane behavior tests (flowforge#24). Same legs the
+      # prepublishOnly gate runs, so a release cannot outrun its tests.
+      - name: Node test spine
+        run: npm test
+
       # The five scripts/ gates compile then run (frontmatter, links, style,
-      # fiction signatures, Liquid filters). Same ritual as the README.
+      # fiction signatures, Liquid filters) plus the birth-gate lane
+      # (flowforge#5: YAML-parse every workflow, mount independence, gc-safe
+      # serde, determinism note). Same ritual as the README.
       - name: Shell gates
         run: npm run check && npm run lint:docs
 
@@ -61,7 +74,7 @@ jobs:
       # that workflow runs on main pushes only). Ruby deps ride the Gemfile;
       # bigdecimal is declared there on purpose (Ruby 3.4 bundled gem).
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: '3.2'
           bundler-cache: true
@@ -72,16 +85,19 @@ jobs:
         env:
           JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # packstruct lint (issue-adopted from the /packs contract): a manifest
-      # declaring an entry that doesn't ship dies here, at author time.
+      # packstruct lint via the WRAPPER VERB (issue #12): scripts/lint-packs.cjs
+      # runs packstruct over the repo's own install (node_modules/.bin first,
+      # then PATH), default dir = the packs ROOT (the packs/public footgun
+      # reads as "0 packs checked"). A manifest declaring an entry that
+      # doesn't ship dies here, at author time.
       # PINNED to npm 1.0.0 - packstruct's pin convention is the struct
       # ladder (0.9.x manual, 1.0.0+ tag-published), and bumps move the
       # MANIFEST.md row in the same commit.
       - name: Install packstruct (pinned)
         run: npm install --no-save --no-audit --no-fund packstruct@1.0.0
 
-      - name: packstruct lint packs/
-        run: node node_modules/packstruct/bin/cli.mjs lint packs/ --json
+      - name: packstruct lint packs/ (wrapper verb)
+        run: npm run lint:packs
 
       # crashtest row: armed, but wakes only when the shell has a target.
       # `crashtest run` with no crashtest.config.js is a hard exit 2 (missing

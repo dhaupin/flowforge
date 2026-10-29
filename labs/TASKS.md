@@ -1,10 +1,6 @@
 # labs/TASKS.md - the rolling work log
 
-One file, appended per landing/session, newest last, with receipts (files,
-gates, SHAs). The house law this file serves: **the log is the memory** -
-the next agent should never guess what happened. Conventions live in
-[../AGENTS.md](../AGENTS.md); versioned product changes also get a
-[CHANGELOG.md](../CHANGELOG.md) entry in the same commit.
+One file, appended per landing/session, newest last, with receipts (files, gates, SHAs). The house law this file serves: **the log is the memory** - the next agent should never guess what happened. Conventions live in [../AGENTS.md](../AGENTS.md); versioned product changes also get a [CHANGELOG.md](../CHANGELOG.md) entry in the same commit.
 
 ## Open asks (carry forward until landed)
 
@@ -107,7 +103,6 @@ the next agent should never guess what happened. Conventions live in
 ---
 
 ### 2026-10-25 - test.yml: packstruct + crashtest wired from start (poststruct/eyestruct TBA slots documented)
-
 
 - Lead-in receipts, from answering the user's "did we hook packstruct +
   crashtest into CI?" question: the shell shipped NO family CI (docs-deploy
@@ -372,3 +367,50 @@ the next agent should never guess what happened. Conventions live in
 - First release path (manual, per [../DEPLOY.md](../DEPLOY.md)): bump check
   -> `v0.9.0` tag -> OIDC publish -> GitHub release from the tag with the
   changelog entry as its body.
+
+---
+
+### 2026-10-29 - two-bucket round on `staging` (Buckets A + B)
+
+Branch `staging` off `main` @ df86464 (2026-10-25 "Family reqs round"), clean tree, shallow clone. Version stays 0.9.0 (no tag yet - the census leg holds every surface honest meanwhile). All 29 open issues read via the GitHub REST API (gh CLI unauthenticated -> GITHUB_TOKEN + REST). Receipts gathered from dhaupin/{eyestruct,prestruct,crashtest,freestruct}.
+
+**Bucket A - adopt the fixes the newest family repos already paid for**
+
+- A1 (#16): `web/public/robots.txt` - flowforge crawler policy + sitemap pointer (`https://flowforge.creadev.org/sitemap.xml`).
+- A2 (#7): Rouge/code token parity - `docs/_layouts/default.html` Rouge block expanded (`.cs/.ch` comment rules, `--err` token) and a matching `.code` syntax-token block added to `web/src/styles.css` (same class vocabulary + palette).
+- A3 (#13): mobile table guard - `docs/_layouts/default.html` `.main { min-width: 0 }`; `web/src/styles.css` `table:not(.attacks)` display/overflow guard + `.table-wrap` (transcribed from eyestruct).
+- A4 (#15): `docs/_layouts/default.html` header brand link now `{{ site.baseurl }}/`; `docs/_data/nav.yml` gained a Reference group ("Release posts"); `docs/discussions/index.md` leaned + a flowing-prose note.
+- A5 (#6): `web/src/islands.js` observer guard (`mounted`/`observers`/`observing` WeakSets; `mount()` disconnects its observer) - transcribed from prestruct `engine/src/islands.js`.
+
+**Bucket B - bring the process surfaces up to the family standard**
+
+- B1 (#25): flowing prose. `scripts/unwrap-prose.cjs` transcribed from eyestruct; ran it over README/AGENTS/CHANGELOG/DEPLOY/MANIFEST/labs/docs (no re-wrap); gates green after.
+- B2/B7 (#23/#29): the publish ladder. `package.json` gained `test` + `prepublishOnly` (`npm test && npm run check && npm run lint:docs`); `release.yml` gained a gate refusing 0.x and a tag that disagrees with the packaged version (every github context value reaches the script through env, never inline interpolation).
+- B3 (#22): root `.gitignore` (docs-preview block) + a `DEPLOY.md` out-of-tree local-preview recipe (unpacked Ruby in `$HOME`, shimmed binstubs, `BUNDLE_PATH` outside the repo, build from a scratch copy of `docs/`).
+- B4 (#24): `scripts/ship-from-download.cjs` + `tests/ship-from-download.test.cjs` (21 pass; renamed `.cjs` - the root package is ESM).
+- B5 (#17): `web/scripts/adopt-icons.mjs` (sharp + potrace + resvg -> traced SVG + icon set + authored `brand-mark.json`) and `web/scripts/og-image.mjs` (1200x630 card consuming the mark + `ssr.config.js` identity). Both smoke-tested on synthetic art; generated output reverted (the pipeline is the deliverable, not new icons for the shell).
+- B6 (#10/#11): `docs/_freestruct/inject-brand.html` upgraded to the engine-edition JSON-LD (Organization + WebSite pair, `{{authorJson}}` founder seam, `{{searchActionJson}}` seam); `docs/freestruct.config.yml` gained `author` + `jsonLd` identity. Verified LIVE against the pinned freestruct 1.1.0 engine on a scratch build - the injected head carries the founder Person, the maintainer Person, and the WebSite block.
+- B8 (#12): `scripts/lint-packs.cjs` + `npm run lint:packs` (wrapper verb); `test.yml` routed through it. Verified both paths: exit 2 naming the exact-devDep fix with no install, exit 0 with packstruct 1.0.0 installed.
+- B9 (#5): `scripts/check-birth-gate.cjs` (five checks: workflow YAML parse + duplicate-key refusal, mount independence, gc-safe serde, determinism note, and the pins-never-float rule - every `uses:` must be a 40-hex SHA), wired into `npm run check`; consumes the root `js-yaml` devDep + a committed lockfile.
+- B10 (#6): every action SHA-pinned across `test.yml`, `docs-deploy.yml`, `release.yml` (checkout v7, setup-node v7, ruby/setup-ruby v1.335.0, upload-pages-artifact v5, deploy-pages v5) - the comment names the human tag, the birth-gate's fifth check enforces the 40-hex form, and each SHA was verified to map to its claimed tag via the API.
+- B11 (#28): `tests/census.test.cjs` - the version-truth census leg (root `package.json` is THE version source; `web/package.json` + the README Status line cannot drift). README gained the Status line the leg pins.
+
+**Gates (all run on the branch)**
+
+- `npm ci` -> clean (one root devDep: js-yaml).
+- `npm test` -> 22 pass / 0 fail (census + 21 ship-lane behavior tests).
+- `npm run check` -> PASS (five gate compile checks + birth-gate lane: 3 workflows parsed, 4 checks incl. 9 action refs all SHA-pinned).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters).
+- `npm run lint:packs` -> PASS (packstruct 1.0.0 over packs/, 0 packs checked).
+- `npm install --prefix web && npm run build --prefix web` -> 3/3 pages rendered, REPAIR-404 PASS.
+- freestruct engine smoke test (pinned 1.1.0) -> injected head carries founder + maintainer + WebSite JSON-LD.
+
+**Receipts / SHAs**
+
+- Extraction source receipts (real SHAs, verified via the API at extraction time): dhaupin/eyestruct `scripts/unwrap-prose.cjs` @ 3adda1dc, `scripts/ship-from-download.cjs` @ 9744c768 (+ `tests/ship-from-download.test.js`), `lib/lint-packs.js` @ cd135a91, `web/scripts/make-icons.mjs` @ e4a73ac (introduced 6556225) + `web/scripts/og-image.mjs` @ 33a7c19, `tests/census.test.js` @ 3d8a822 (introduced); the local docs-preview recipe @ 8a194ad + its gitignore block @ ca2f62a; prestruct `engine/src/islands.js` @ 59cb0469; the Rouge full-vocabulary block @ prestruct c915760 and the mobile table guard @ eyestruct 138fda9.
+- Action pins: checkout `3d3c42e5aac5ba805825da76410c181273ba90b1` (v7), setup-node `949feb2413d6458794dcd2491c4babbbce0c15c1` (v7), ruby/setup-ruby `7f797815d8adceb1c412e7abefdd1ab4abc47a5f` (v1.335.0), upload-pages-artifact `fc324d3547104276b827a68afc52ff2a11cc49c9` (v5), deploy-pages `368f82528645a54fb793d4d04e342629a3f51346` (v5).
+
+**Left open (next round candidates)**
+
+- #27 / #29 remainder: poststruct + eyestruct CI slots stay TBA (both are README/horcrux stubs - no CLI to pin yet).
+- #4: the deterministic-pack / pack-twice byte-compare step is noted by the birth-gate but not exercised (the shell ships no packer).

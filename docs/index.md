@@ -8,10 +8,7 @@ nav_order: 1
 
 # flowforge docs
 
-The flowforge shell's docs head: one sample page so the frontmatter gate,
-the link check, and the Rouge engine all have real bytes to chew on. Replace
-it with your pages and keep the four required frontmatter fields
-(permalink, layout, title, description) on every page.
+The flowforge shell's docs head: one sample page so the frontmatter gate, the link check, and the Rouge engine all have real bytes to chew on. Replace it with your pages and keep the four required frontmatter fields (permalink, layout, title, description) on every page.
 
 ## Highlighting works out of the box
 
@@ -30,8 +27,4 @@ bundle exec jekyll build
 
 ## The sidebar nav
 
-Sidebar sections come from `docs/_data/nav.yml`: a list of groups, each
-with a `title` and an `items` list of `{title, url}` entries. The shipped
-starter nav links only pages the shell actually carries (this page and the
-release-posts index) with exemplar rows commented - replace it with yours
-as your pages land.
+Sidebar sections come from `docs/_data/nav.yml`: a list of groups, each with a `title` and an `items` list of `{title, url}` entries. The shipped starter nav links only pages the shell actually carries (this page and the release-posts index) with exemplar rows commented - replace it with yours as your pages land.

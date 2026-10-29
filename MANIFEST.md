@@ -1,12 +1,8 @@
 # flowforge MANIFEST - the receipts
 
-Every file in this rig is either an extraction from a deployed, verified
-surface or a tiny generic glue file. This table names which, at which SHA,
-so adopters can diff against the source and so bumping a pinned engine is a
-deliberate review rather than a drift.
+Every file in this rig is either an extraction from a deployed, verified surface or a tiny generic glue file. This table names which, at which SHA, so adopters can diff against the source and so bumping a pinned engine is a deliberate review rather than a drift.
 
-Extraction source: **dhaupin/crashtest @ 905aa91** (2026-10-24) unless noted.
-Byte-exact copies were verified with `cmp` at extraction time.
+Extraction source: **dhaupin/crashtest @ 905aa91** (2026-10-24) unless noted. Byte-exact copies were verified with `cmp` at extraction time.
 
 ## docs/ (Jekyll rig)
 
@@ -44,6 +40,8 @@ Byte-exact copies were verified with `cmp` at extraction time.
 | `public/icon.svg`           | placeholder (matches docs/icon.svg byte-equal)                                               |
 | `public/icon-192.png`, `icon-512.png`, `favicon-32.png`, `apple-touch-icon.png`, `og-image.png` | generated (unpacked-day 2, 2026-10-25): rasterized from `public/icon.svg` via @resvg-js OUT-OF-TREE (no rasterizer dep committed); og-image is the token composition (paper + line frame + the mark + wordmark) - making the webmanifest/favicon links stop 404ing. CRASHTEST'S PNGs were NOT imported (brand data stays per-repo). |
 | `scripts/repair-404.cjs`    | new (unpacked-day 2, 2026-10-25, flowforge-authored): UPSTREAM prestruct bug receipt - engine `generate404()` uses function replacers whose return strings carry literal `$1/$2`, which function form does NOT expand (string replacers do). Whole description/og:title/twitter:title/canonical tags get consumed and ship as leaked text the browser hoists into the body (live on crashtest.creadev.org's 404 too; tracked upstream since 2026-10-23 as prestruct#33 with the root-fix proposal in prestruct#42 - generate the 404 through the injection pipeline - still present in npm 1.1.0 and repo main, unfixed; RETIRE this script at the pin bump that carries the #33/#42 fix). Rewrites the four tags from ssr.config truth + ASSERTS clean (no `$1/$2`, exactly one description, canonical on origin); wired AFTER `prestruct build` in web build. |
+| `scripts/adopt-icons.mjs`   | new (2026-10-29, issue #17): the icon pipeline - raster brand art -> traced vector (potrace) -> full icon set (svg + 4 png into `web/public/` and a byte-identical `docs/icon.svg`) + an authored `brand-mark.json` the OG card redraws. Generalized from dhaupin/eyestruct `web/scripts/make-icons.mjs` @ e4a73ac (introduced 6556225) to take `--art` (the shell ships no art). Helpers ride `npm i --no-save`; no rasterizer dep committed. |
+| `scripts/og-image.mjs`      | new (2026-10-29, issue #17): the 1200x630 OG card - consumes `brand-mark.json` (the traced mark) + `ssr.config.js` identity, family token palette defaults. Transcribed from dhaupin/eyestruct `web/scripts/og-image.mjs` @ 33a7c19. |
 
 ## scripts/ (the docs gates)
 
@@ -54,13 +52,19 @@ Byte-exact copies were verified with `cmp` at extraction time.
 | `check-docs-style.cjs`      | byte-exact copy (voice/hyphen rules)                                                          |
 | `check-fiction-signatures.cjs` | same scanner logic; seed signatures are GENERIC - seed your own the moment a fiction is caught twice |
 | `check-jekyll-filters.cjs`  | byte-exact copy (the two-arg single-arg Liquid filter trap - found live in packstruct CI, crashtest#23) |
+| `check-birth-gate.cjs`      | new (2026-10-29, issue #5): the birth-gate lane - YAML-parse every workflow (duplicate-key refusal kills the `unquoted self-test:` step-name class that dies at GitHub's parser with zero check runs), assert staging-mount independence when a mounts/ dir exists, gc-safe serde (gc.auto 0 + gc.writeCommitGraph false) on any pack script, a determinism note, and the pins-never-float rule (every `uses:` must be a 40-hex commit SHA - a moving `@v4` is a supply-chain hole). Consumes the root `js-yaml` devDep. Transcribed from the gistory birth-run receipt (flowforge#4). |
+| `lint-packs.cjs`            | new (2026-10-29, issue #12): the packstruct passthrough wrapper verb every port otherwise re-derives - node_modules/.bin first then PATH, default dir = the packs ROOT (the `packs/public` footgun reads as "0 packs checked"), exit 2 naming the exact-devDep fix when absent. Shaped after crashtest's lint-packs verb + eyestruct `lib/lint-packs.js` @ cd135a91 (issue #32). |
+| `ship-from-download.cjs`    | new (2026-10-29, issue #24): the generic phone publish lane (Termux recipe, scripted) - stages a zip-extracted npm tree into $HOME, refuses shared-storage roots / $HOME / non-empty roots by name, npm ci-or-install, token from ENV only (never a file, argv, or log), exit 0/1/2. Family-reusable, product-agnostic; transcribed from dhaupin/eyestruct `scripts/ship-from-download.cjs` @ 9744c768. |
+| `unwrap-prose.cjs`          | new (2026-10-29, issue #25): the flowing-prose convention tool - joins hard-wrapped prose lines, skipping frontmatter/fenced code/tables/headings/blank boundaries; transcribed from dhaupin/eyestruct `scripts/unwrap-prose.cjs` @ 3adda1dc. |
+| `tests/census.test.cjs`     | new (2026-10-29, issue #28): the version-truth census leg - root package.json is THE version source, and web/package.json + the README Status line cannot drift from it (worked example: dhaupin/eyestruct@3d8a822). |
+| `tests/ship-from-download.test.cjs` | new (2026-10-29, issue #24): behavior tests for the ship lane - temp dirs, fake npm runner seam, no network; asserts the token never lands in a file or the log. Transcribed from dhaupin/eyestruct's ship test @ 9744c768 (renamed `.cjs` - the root package is ESM). |
 
 ## .github/workflows/
 
 | file                        | receipt                                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------------------- |
 | `docs-deploy.yml`           | extracted from crashtest docs.yml; includes the TOKEN-AUTH pagefind scrape (rate-limit lesson) and the PINNED freestruct install (npm `^1.1.0` since 2026-10-25/issue #3 - was the git-ref pin) || `release.yml`               | template: npm Trusted Publishing (OIDC), no publish tokens, tag-driven |
-| `test.yml`                  | new (2026-10-25, same-day CI hookup): the shell's push/PR battery - the five scripts/ gates, web build (prestruct + repair-404 assert), docs Jekyll build (PR coverage docs-deploy doesn't give), packstruct lint over packs/ (pinned npm 1.0.0; empty shell = 0 packs checked, exit 0, the first pack.json is gated from its first commit) and a crashtest row ARM-GATED on `crashtest.config.js` existing (crashtest run without a config is a hard exit 2, not a pass - the shell has no handlers to attack yet; remove the `if:` lines the day a config lands). Family posture: poststruct + eyestruct = TBA slots documented in the workflow header (both repos are README/horcrux stubs; no CLI to pin - wiring them before a CLI exists would be theater). |
+| `test.yml`                  | new (2026-10-25, same-day CI hookup): the shell's push/PR battery - the five scripts/ gates, web build (prestruct + repair-404 assert), docs Jekyll build (PR coverage docs-deploy doesn't give), packstruct lint over packs/ (pinned npm 1.0.0; empty shell = 0 packs checked, exit 0, the first pack.json is gated from its first commit) and a crashtest row ARM-GATED on `crashtest.config.js` existing (crashtest run without a config is a hard exit 2, not a pass - the shell has no handlers to attack yet; remove the `if:` lines the day a config lands). Family posture: poststruct + eyestruct = TBA slots documented in the workflow header (both repos are README/horcrux stubs; no CLI to pin - wiring them before a CLI exists would be theater). 2026-10-29 (issues #5/#12/#28): added a hermetic `npm ci` + the node:test spine (`npm test`: version-truth census + ship-lane behavior tests), routed packstruct through the wrapper verb (`npm run lint:packs`), and the shell gates now include the birth-gate lane. |
 
 ## Engine pins (bump = deliberate review)
 
@@ -70,7 +74,7 @@ Byte-exact copies were verified with `cmp` at extraction time.
 | crashtest  | `1.1.0` (npm; test.yml, ARM-GATED on crashtest.config.js) | the adversarial-QA runner - pinned & parked until the shell has a target (no handlers = no config = no run) |
 | freestruct | `^1.1.0` (npm; docs-deploy.yml) - was github `dhaupin/freestruct#dfb30aa498`, moved 2026-10-25 (issue #3): the npm name finally published, and 1.1.0 reorganized `docs/lib/` -> `engine/` + a `bin/freestruct.mjs` shim, so the git-sha install was already pointing at a tree that no longer matches the invocation. Bumped to semantic npm pin the same day the tag shipped; the PINNED lesson stands, only the transport changed. Invoke now: `node node_modules/freestruct/engine/inject.js` (the engine moved out of docs/lib at 1.1.0; the npm package's old docs/lib path is gone). |
 | pagefind   | latest-resolve IN CI, token-authenticated, hard-refused on an unparseable tag | unauthenticated scrapes get rate-limited from shared runner IPs          |
-| actions    | `actions/checkout@v4`, `actions/setup-node@v4`, `upload-pages-artifact@v3`, `configure-pages`/`deploy-pages` as pinned in the copied workflow | |
+| actions    | SHA-pinned (2026-10-29, issue #6): `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` (v7), `actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1` (v7), `ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f` (v1.335.0), `upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9` (v5), `deploy-pages@368f82528645a54fb793d4d04e342629a3f51346` (v5) - a moving major is a supply-chain hole; the comment names the human tag |
 
 ## Repo-level docs and the agency layer
 
@@ -81,6 +85,7 @@ Byte-exact copies were verified with `cmp` at extraction time.
 | `CHANGELOG.md`              | new (this cut): npm-format log; entries ride the same commit as version bumps                  |
 | `labs/TASKS.md`             | new (this cut): seeded rolling log; every session appends receipts                             |
 | `packs/README.md` + `packs/.gitignore` | new (this cut): the /packs contract + struct-family links; `packs/local/` gitignored |
+| `.gitignore` (root)         | new (2026-10-29, issue #22): the local docs-preview belt-and-suspenders block (`docs/.bundle/`, `docs/vendor/`, `docs/_site/`, `docs/Gemfile.lock`) + node_modules/dist/packs-local. Transcribed from dhaupin/eyestruct `.gitignore` @ e8a9649 (block introduced ca2f62a). |
 | `package.json` (root)       | new (this cut): npm-publishable metapackage @0.9.0, `files` = the rig, no runtime deps         |
 | `web/package.json`          | version moved to 0.9.0 (kept equal with the root version - the version protocol)               |
 
@@ -88,5 +93,4 @@ Byte-exact copies were verified with `cmp` at extraction time.
 
 1. Change the pinned SHA/version in the workflow or `MANIFEST.md`.
 2. Run the verify suite in the README.
-3. Land all of it (works + receipt bump) in the SAME commit - the rig's docs
-   must never claim a state the workflows do not run.
+3. Land all of it (works + receipt bump) in the SAME commit - the rig's docs must never claim a state the workflows do not run.
