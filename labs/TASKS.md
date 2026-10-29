@@ -566,3 +566,12 @@ Owner asked to (a) settle the dogfood folder, (b) adopt the `mounts/[public,priv
 - **mounts/ recorded as the shared proto-spec** (PRD section 11.2): three tiers, one `state.json`; railyard is the first real home, with all three tiers **visible at first** (the `private/` + `local/` gitignore lines written but commented out, flipped private later without a migration).
 - **No version bump** (0.9.0 = 0.9.0); labs/PRD only, no code change. PRD-only edits do not touch CHANGELOG (not a versioned surface).
 - **Next:** owner to create `dhaupin/railyard`; then scaffold its skeleton (`mounts/{public,private,local}` + commented gitignore + `factory.json` + PRD stub), and either start flowforge Phase 1 or hold until railyard's shape is set.
+
+### 2026-10-29 - session: railyard skeleton landed
+
+Owner created `dhaupin/railyard` (private, access confirmed: push permission, default branch `main`, empty). Scaffolded and pushed the skeleton as `c8d10e3`.
+
+- **railyard skeleton** (`dhaupin/railyard@c8d10e3`): `factory.json` (name, species "the forge yard", pitch, `siteDomain` railyard.creadev.org, version 0.9.0), `mounts/README.md`, `mounts/state.json` (`"tiers": ["public","private","local"]`; `flowforge` + `monoforge` registered as the first two public mounts, `tree` + `repo` per mount), `mounts/public/<mount>/boot/README.md`, `mounts/{private,local}/.gitkeep`, `.gitignore` (the `private/` + `local/` lines written but COMMENTED - all three tiers visible while the spec is young), plus README, AGENTS, CHANGELOG, LICENSE, and a PRD stub.
+- **Receipts** (dhaupin/gistory@main): `mounts/README.md` + `mounts/state.json` (the proto-spec, 2026-10-28), `mounts/public/monoforge/boot/README.md` (tarball-first landing). railyard's `mounts/README.md` records the proto-spec provenance and the parity ask to vant + packstruct.
+- **No payloads yet** - the mounts are registered, not landed. monoforge's move out of gistory (owner-driven: an agent cuts the staging tar) is what lands the first boot bytes.
+- **Next:** (3) monoforge staging tar out of gistory onto `dhaupin/monoforge` staging (owner will signal when the tar is ready); (2) flowforge Phase 1 (split tool from site).
