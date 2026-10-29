@@ -1,0 +1,31 @@
+# Starter docs nav (freestruct menu layer format - same shape the struct
+# family ships). URLs are BASEURL-RELATIVE: the layout prefixes site.baseurl,
+# so the same nav.yml works on any deploy path without editing (no brand or
+# baseurl literal here - the brand census gate holds that).
+#
+# This starter links ONLY pages the shell actually ships. Replace it with
+# your own groups as your pages land - commented rows show the shape.
+
+- title: Getting Started
+  items:
+  - title: Overview
+    url: /
+
+# The release-post surface rides the menu (issue #15): a full release-post
+# tree hidden from navigation is a surface nobody finds. Label convention:
+# gistory's voice calls this tree "discussions"; the page title is
+# "Release posts" - pick one label and keep it (the layout comment says so).
+- title: Reference
+  items:
+  - title: Release Posts
+    url: /discussions/
+
+# Exemplar rows (shape reference - point them at real pages when you have them):
+#  - title: Reference
+#    items:
+#    - title: The Reference Index
+#      url: /project/reference/
+#  - title: About
+#    items:
+#    - title: Voice & Style
+#      url: /project/about/style

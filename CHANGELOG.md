@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https
 
 ## Unreleased - staging (2026-10-29)
 
+### Phase 1 - split tool from site (2026-10-29)
+
+The tool and the site become separate halves (PRD 7/9). The copyable shell and the reusable gates move to their own homes; the dogfood stays put.
+
+- `lib/` - the TOOL, versioned once and imported by adopters (not copied per site). The `check-*.cjs` family moved from `scripts/` to `lib/gates/`, and `flowforge-sync.mjs` -> `lib/sync.mjs`, `lint-packs.cjs`/`ship-from-download.cjs`/`unwrap-prose.cjs` -> `lib/`. The gates now reach an adopter through `npm update`, so a gate bug fixed once reaches every site (the reason for `lib/` rather than a fresh copy).
+- `lib/root.cjs` / `lib/root.mjs` - the shared SITE-root resolver. Every gate used `path.resolve(__dirname, '..')`, which assumed the gate sat beside the site it checks - false once the tool is imported. The resolver walks up to the nearest `site.config.js` (skipping any candidate under `node_modules`, so the tool's own copy never wins), with a `--root <dir>` override for tests. One rule, both the dogfood and an installed adopter.
+- `lib/template.mjs` + `npm run template` / `npm run template:check` - builds `templates/site/` from the dogfood tree, tokenized the monoforge way (`__NAME__`, `__SITE_URL__`, `__DOCS_URL__`, ...). Generated, not hand-kept, so the copy source cannot drift from the live shell (a hand-maintained duplicate would reintroduce exactly the churn the dogfood-in-place call avoids). `--check` refuses a drifted or stale template and is wired into `npm run check`; a self-guard refuses to emit if any dogfood identity literal survives tokenization.
+- `templates/site/` - the copy source `flowforge create` will stamp: the shell (`web/` + `docs/` + `site.config.js`) with identity tokens. Sync-owned outputs (`docs/_config.yml`, `docs/freestruct.config.yml`, `web/public/robots.txt`, `web/public/site.webmanifest`) are excluded - the adopter regenerates them.
+- `tests/template.test.cjs` - behavior tests for the template builder: `template:check` green on the live tree, the shell ships, no dogfood identity literal survives, the token vocabulary is present, and a rebuild is byte-identical.
+
+### Changed (Phase 1)
+
+- `package.json` - `files` now ships `lib/` + `templates/` (the tool), not `scripts/`; the `check`/`lint:docs`/`lint:packs`/`sync` scripts repointed to `lib/`; added `template`/`template:check`; `check` now also runs `template:check`.
+- `tests/*.test.cjs` - repointed to the `lib/` layout, and the fixtures now mirror the shipped shape (config at the root, tool under `lib/`, the shared `root.cjs` copied beside the gate) - the same shape an adopter's repo has once flowforge is installed.
+- `web/public/brand/flowforge-logo.jpg` -> `web/public/brand/logo.jpg` - a brand name in a filename is invisible to the census gate, so it was the one identity literal a rebrand would miss.
+- `.github/workflows/test.yml` - the gate comments repointed to `lib/` (the steps already run through npm scripts, so no behavior change).
+- README / AGENTS / DEPLOY / MANIFEST / `labs/prd-flowforge.md` - the tool/site split recorded: the new layout, the `lib/` + `templates/` homes, the resolver rule, and the generated-template decision (PRD 9).
+
 ### Added
 
 - `site.config.js` (root) - THE site identity, authored once, read everywhere (Phase 0 of `labs/prd-flowforge.md`). Holds name, wordmark, tagline, description, url, repo, author, maker, org, docs block, theme block (the two axes as protocol constants), nav vocabulary, footer extras, routes, and the 404 copy. Named for the CONCERN, not the tool (PRD 5.1): a product-named config would force prestruct and freestruct to depend on flowforge, inverting the engine-to-shell dependency. Added to `package.json` `files` so adopters get it.
