@@ -42,6 +42,39 @@
             --accent: #4055c5; --accent-deep: #33449e; --moss: #2e7d4f; --err: #b04b3f;
             --line: #d9dee9; --code-bg: #e9ecf3;
         }
+        /* Paint schemes (issue #20) - the same presets the landing shell ships,
+           mirrored here so the two surfaces agree. Iris is the default (the
+           blocks above); each scheme overrides only its identity tokens, and
+           the light half is a [data-scheme][data-theme="light"] block so light
+           always wins in every scheme (specificity, same as web/src/styles.css). */
+        html[data-scheme="petrol"] {
+            --paper: #0a1113; --surface: #0f191c; --raised: #152126;
+            --ink: #e3eaec; --ink-soft: #8ba3aa; --ink-light: #8ba3aa;
+            --accent: #8894f4; --accent-deep: #6d7bdc; --moss: #35c38e; --err: #eb7162;
+            --line: #1b2c31; --code-bg: #071013;
+        }
+        html[data-scheme="petrol"][data-theme="light"] {
+            --paper: #edf3f2; --surface: #ffffff; --raised: #e2ecea;
+            --ink: #0e171b; --ink-soft: #5b7078; --ink-light: #5b7078;
+            --accent: #4353c9; --accent-deep: #3342ac; --moss: #178f62; --err: #b24c3d;
+            --line: #d3e0de; --code-bg: #e1ece9;
+        }
+        html[data-scheme="golden"], html[data-scheme="jade"] {
+            --paper: #121011; --surface: #181515; --raised: #211b19;
+            --ink: #ece6df; --ink-soft: #a89c92; --ink-light: #a89c92;
+            --moss: #8fbe6f; --err: #e2665b;
+            --line: #2b2521; --code-bg: #0d0b0a;
+        }
+        html[data-scheme="golden"][data-theme="light"], html[data-scheme="jade"][data-theme="light"] {
+            --paper: #f6f1e7; --surface: #ffffff; --raised: #eae2d2;
+            --ink: #1c1712; --ink-soft: #6b6055; --ink-light: #6b6055;
+            --moss: #567a26; --err: #b04a34;
+            --line: #e0d6c3; --code-bg: #efe8d8;
+        }
+        html[data-scheme="golden"] { --accent: #f0b458; --accent-deep: #d9962c; }
+        html[data-scheme="golden"][data-theme="light"] { --accent: #a06a0c; --accent-deep: #7d5310; }
+        html[data-scheme="jade"] { --accent: #45cf83; --accent-deep: #2fae68; }
+        html[data-scheme="jade"][data-theme="light"] { --accent: #197a4c; --accent-deep: #115c39; }
         * { margin: 0; box-sizing: border-box; }
         html { background: var(--paper); color-scheme: dark; }
         html[data-theme="light"] { color-scheme: light; }
@@ -71,6 +104,17 @@
         .search-key { border: 1px solid var(--line); border-radius: 4px;
             padding: 0 5px; font-size: 10.5px; line-height: 16px; }
         .theme-switch svg { width: 18px; height: 18px; display: block; }
+        /* Paint-scheme picker (issue #20): rides beside the light/dark switch,
+           a native <select> the shell re-colors via tokens. */
+        .scheme-switch { appearance: none; background: none; border: 1px solid transparent;
+            border-radius: 6px; color: var(--ink-soft); cursor: pointer;
+            font: inherit; font-size: 12.5px; padding: 6px 22px 6px 8px;
+            background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                              linear-gradient(135deg, currentColor 50%, transparent 50%);
+            background-position: right 10px center, right 6px center;
+            background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+        .scheme-switch:hover { color: var(--accent); border-color: var(--line); }
+        .scheme-switch option { color: var(--ink); background: var(--surface); }
         /* Sun shows in dark mode (click = go light); moon in light mode
            (click = go dark) - the icon is the ACTION, not the state (the
            agreed struct-family convention, crashtest#26). Both icons always
@@ -190,10 +234,13 @@
         }
     </style>
     <script>
-        // Theme bootstrap (before first paint): the default tokens are dark,
-        // so only a persisted light theme needs flipping. Keep the key and
-        // the palette in sync with the toggle handler below.
+        // Theme + paint-scheme bootstrap (before first paint): the default
+        // tokens are dark/iris, so a persisted light theme and/or a persisted
+        // scheme need applying here. Keep the keys in sync with the toggle
+        // handlers below and with the landing shell (web/src/theme.js).
         try {
+            var s = localStorage.getItem('flowforge-paint-scheme');
+            if (s && s !== 'iris') document.documentElement.dataset.scheme = s;
             if (localStorage.getItem('flowforge-theme') === 'light') {
                 document.documentElement.dataset.theme = 'light';
             }
@@ -215,6 +262,12 @@
             <a href="https://github.com/dhaupin/flowforge" class="header-btn" aria-label="flowforge on GitHub" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
             </a>
+            <select class="scheme-switch" id="schemeSwitch" aria-label="Paint scheme">
+                <option value="iris">iris</option>
+                <option value="petrol">petrol</option>
+                <option value="golden">golden</option>
+                <option value="jade">jade</option>
+            </select>
             <button type="button" class="header-btn theme-switch" id="themeSwitch" aria-label="Toggle light/dark mode">
                 <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -276,6 +329,16 @@
         var next = el.dataset.theme === 'light' ? 'dark' : 'light';
         el.dataset.theme = next;
         try { localStorage.setItem('flowforge-theme', next); } catch (e) {}
+    });
+
+    // Paint-scheme picker (issue #20). Iris is the default (no attribute).
+    var schemeSwitch = document.getElementById('schemeSwitch');
+    schemeSwitch.value = document.documentElement.dataset.scheme || 'iris';
+    schemeSwitch.addEventListener('change', function () {
+        var el = document.documentElement;
+        if (this.value === 'iris') delete el.dataset.scheme;
+        else el.dataset.scheme = this.value;
+        try { localStorage.setItem('flowforge-paint-scheme', this.value); } catch (e) {}
     });
 
     // Sidebar (vant shape)

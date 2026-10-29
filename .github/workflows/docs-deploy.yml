@@ -13,7 +13,11 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [main]
+    # staging validates the docs build too (a docs change that breaks the
+    # build should red-light on the integration branch, not surprise the
+    # promotion); the deploy job below is gated to main, so the extra
+    # trigger never puts staging content into production.
+    branches: [main, staging]
     paths: ['docs/**', '.github/workflows/docs-deploy.yml']
   workflow_dispatch:
 
@@ -105,6 +109,11 @@ jobs:
 
   deploy:
     needs: build
+    # Deploy ONLY from main (issue #30, point 3 - the trap): once staging is
+    # in the push trigger above, the trigger no longer keeps its content out
+    # of production; this guard does. workflow_dispatch is likewise held to
+    # main unless deliberately overridden.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

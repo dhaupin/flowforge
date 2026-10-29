@@ -20,12 +20,17 @@ A two-bucket round: adopt the fixes the family's newest repos already paid for (
 - `.gitignore` (root) - the docs-preview belt-and-suspenders block (issue #22).
 - `docs/freestruct.config.yml` author + `jsonLd` identity blocks (issue #11).
 - `DEPLOY.md` local docs-preview recipe (issue #22) - the out-of-tree Ruby/bundler shape an unprivileged sandbox needs.
+- `web/src/theme.js` - the two theme axes as data (issue #20): the light/dark key, the paint-scheme key + preset list (`SCHEMES`), and the per-scheme paper map the theme-color meta reads. Shared by the two switches and mirrored by the pre-paint bootstrap and the docs layout.
+- `web/src/components/SchemeSwitch.jsx` - the paint-scheme picker (issue #20): a native `<select>` beside the light/dark switch that writes `<html data-scheme>`, persists `flowforge-paint-scheme`, and re-sets theme-color. Hydration-safe (first render is the deterministic default; an effect adopts the persisted scheme after mount).
+- Paint-scheme presets (issues #18/#19/#20/#21): `web/src/styles.css` and `docs/_layouts/default.html` gain `[data-scheme="petrol|golden|jade"]` token blocks beside light/dark, values transcribed from the family round. Iris stays the DEFAULT (the base tokens, per #20's ruling) and each preset is a full palette with a `[data-scheme][data-theme="light"]` half, so light always wins in every scheme. The docs rig mirrors the whole axis (blocks + picker + bootstrap + handler).
+- `scripts/check-theme-parity.cjs` + `tests/theme-parity.test.cjs` - the paint-scheme parity gate (issue #20): reads `SCHEMES` from `web/src/theme.js` and refuses a scheme missing from either surface, a scheme without its light half or `--accent`/`--accent-deep`, or an orphan `[data-scheme]` block. Names file:line; wired into `npm run check` + `npm run lint:docs`, with behavior tests for each failure class.
 
 ### Changed
 
 - `package.json` - added `test`, `prepublishOnly`, and `lint:packs`; `check` now includes the birth-gate lane; one root devDependency (`js-yaml`) + a committed lockfile for the hermetic install.
 - `.github/workflows/release.yml` - the publish ladder (issues #23/#29): a gate refusing 0.x and a tag that disagrees with the packaged version, `prepublishOnly` riding every publish, and SHA-pinned actions.
 - `.github/workflows/test.yml` + `docs-deploy.yml` - actions SHA-pinned (issue #6); test.yml adds the hermetic `npm ci` + `npm test` spine.
+- `.github/workflows/test.yml` + `docs-deploy.yml` - the permanent `staging` branch (issue #30): test.yml's push trigger now runs the full battery on `main` AND `staging` (the integration branch is verified, not just the trunk), and docs-deploy.yml watches `staging` for docs-build validation while its `deploy` job is gated to `main` (`if: github.ref == 'refs/heads/main'`) - the trigger no longer keeps staging's docs out of production, the job guard does. `DEPLOY.md` gained the staging-branch section.
 - `docs/_freestruct/inject-brand.html` - upgraded to the engine-edition JSON-LD (issue #11): Organization + WebSite pair, `{{authorJson}}` founder seam, `{{searchActionJson}}` seam.
 - `docs/_layouts/default.html` + `web/src/styles.css` - Rouge/code token parity (issue #7), mobile table guard + `.main { min-width: 0 }` (issue #13), header brand link through `{{ site.baseurl }}/` (issue #15).
 - `web/src/islands.js` - the observer guard (issue #6/#13 class): `mounted`/`observers`/`observing` WeakSets, `mount()` disconnects its observer.
@@ -38,6 +43,10 @@ A two-bucket round: adopt the fixes the family's newest repos already paid for (
 - `web/scripts/adopt-icons.mjs` polarity (issue #17 adoption): the upstream eyestruct `make-icons.mjs` @ e4a73ac traces with `blackOnWhite: true` while its mask sets ink to 255 (white), so potrace traced the BACKGROUND frame and every icon shipped as a photographic negative of the art (correlation of traced fill vs. the ink mask: -0.999; +0.999 with `blackOnWhite: false`). Fixed on adoption, plus an in-script polarity guard that refuses the inverted bbox so the class cannot return.
 
 - The version surfaces can no longer drift silently (the census leg fails the build), and a publish can no longer cut a 0.x tarball or a tag that lies about its version.
+
+### Blocked
+
+- Retiring `web/scripts/repair-404.cjs` (issue #42 / #33, the prestruct literal-`$1`/`$2` 404 leak): the root fix - generate the 404 through the injection pipeline, function replacers expanded - is on prestruct `main` as 1.2.0 but is NOT on npm (latest still 1.1.0, which ships the leak; verified: the raw 1.1.0 `404.html` carries four literal `$1`/`$2` bytes, `repair-404` cleans them to zero). The script stays until the pin bump that carries the fix; `web/package.json` still pins `prestruct: ^1.0.0`.
 
 ## 0.9.0 - 2026-10-24
 

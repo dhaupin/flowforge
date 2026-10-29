@@ -12,7 +12,19 @@ Healthy = the build's last line reads `N/N pages rendered` with N equal to your 
 
 GitHub Pages territory: `.github/workflows/docs-deploy.yml` runs gates -> Jekyll -> freestruct (pinned) -> pagefind -> Pages deploy. Set `docs/_config.yml`'s `url` + `baseurl` to YOUR deploy location FIRST - the layout composes canonical/OG/pagefind/logo paths from it. Without the pagefind index the search modal reports that honestly (it never pretends to search). The `paths:` filter means the workflow only fires on `docs/**` changes, so landing edits never cost a docs deploy.
 
-## 3. Release (npm + GitHub release)
+## 3. The staging branch (issue #30)
+
+`staging` is a **permanent integration branch**: work branches off it, PRs target it, and promotion to `main` is the only path out. The full pattern (with the proof behind each rule) is dhaupin/poststruct#32; the short version:
+
+1. **CI covers staging as well as main** - `test.yml` pushes on both `main` and `staging`, so a red battery red-lights the integration branch before a promotion, not after.
+2. **Any deploy job is gated to `main`.** `docs-deploy.yml` now builds on `staging` too (a docs change that breaks the build should fail there), but its `deploy` job carries `if: github.ref == 'refs/heads/main'`. This is the trap point: once `staging` is in a trigger list, the trigger no longer keeps its content out of production - the job guard does.
+3. **After every promotion, fast-forward staging to main:**
+   ```bash
+   git push origin origin/main:staging     # ff, non-destructive
+   ```
+   A merge-commit promotion puts a commit on `main` that `staging` lacks, so the two drift by one on **every** promotion even when the flow is followed exactly. The sync is a required step, not a repair. (Promoting by fast-forward instead removes the drift entirely - only viable if nothing ever lands on `main` directly.)
+
+## 4. Release (npm + GitHub release)
 
 The Version protocol (also in [AGENTS.md](./AGENTS.md)): bump `package.json` + `web/package.json` in the SAME commit as the [CHANGELOG.md](./CHANGELOG.md) entry -> commit -> tag `vX.Y.Z` -> push the tag. `.github/workflows/release.yml` publishes to npm via Trusted Publishing (OIDC): no `NPM_TOKEN` secret involved, provenance signed.
 
@@ -20,7 +32,7 @@ The Version protocol (also in [AGENTS.md](./AGENTS.md)): bump `package.json` + `
 - If a tag-driven run fails, re-push the tag for the retry: `git push origin :refs/tags/vX.Y.Z && git push origin vX.Y.Z` (the workflow cannot re-run a failed run directly).
 - Then create the GitHub release FROM the tag (Release -> New from tag) and paste the changelog entry as its body.
 
-## 4. Local checks before any push
+## 5. Local checks before any push
 
 ```bash
 # the five docs gates + liquid trap (fast, pure node)
@@ -48,7 +60,7 @@ When you do want the Jekyll stack locally - and an agent sandbox with no sudo an
 
 The root `.gitignore` already carries the belt-and-suspenders block (`docs/.bundle/`, `docs/vendor/`, `docs/_site/`, `docs/Gemfile.lock`) so an accidental in-tree build taints nothing.
 
-## 5. What is deliberately NOT in this runbook
+## 6. What is deliberately NOT in this runbook
 
 - Pack publication, the pack lint lane, and SPEC receipts: packs are a family contract explained in [packs/README.md](./packs/README.md), not part of the shell's own deploy story.
 - Server work: there is none. If your project needs a backend, that is a feature of YOUR project, not of this rig.

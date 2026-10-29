@@ -440,3 +440,48 @@ The user supplied brand art at `web/public/brand/flowforge-logo.jpg` (203301 byt
 - `npm run build --prefix web` -> 3/3 pages rendered, REPAIR-404 PASS; `dist/brand/flowforge-logo.jpg` ships (adopter brand data, the eyestruct convention).
 
 Version stays 0.9.0 (no bump, no OIDC - the user's manual push comes first).
+
+---
+
+### 2026-10-29 - session: staging branch in CI (c), paint-scheme axis + picker (e), repair-404 blocked (d)
+
+The user asked for all three carry-forward options this session. Two landed; one is honestly blocked on an unpublished upstream fix.
+
+**c - the permanent `staging` branch (issue #30)**
+
+- `.github/workflows/test.yml` - the push trigger is now `branches: [main, staging]`, so the integration branch runs the whole battery (gates, web build, docs build, packstruct, crashtest row), not just `main`. Before this, work could pile up on `staging` with zero CI signal.
+- `.github/workflows/docs-deploy.yml` - push now also fires on `staging` (docs-build validation on the integration branch), and the `deploy` job carries `if: github.ref == 'refs/heads/main'`. This is the #30 point-3 trap: once `staging` is a trigger, the trigger itself no longer keeps staging's content out of production - the job guard does. Without the guard, a push to `staging` would publish.
+- `DEPLOY.md` - new "## 3. The staging branch (issue #30)" section; the following sections renumbered to 4/5/6 (a duplicate `## 4` died in the process).
+- Receipt: the birth-gate re-ran clean after the edits - "BIRTH-GATE: PASS (3 workflow(s) parsed, 4 checks clean)" - so the new trigger/gate survive the YAML-parse + SHA-pin checks.
+
+**e - the paint-scheme axis + palette picker (issues #18 petrol, #19 jade, #20 picker, #21 golden hour)**
+
+- `web/src/styles.css` - a second, orthogonal axis beside light/dark: `html[data-scheme="petrol|golden|jade"]` token blocks that override only the identity tokens (iris stays the default - it IS the base `:root`). Each preset is a FULL palette with a `html[data-scheme=...][data-theme="light"]` half, so light mode always wins inside every scheme. golden/jade share one warm-graphite cast and differ only in the accent trio. No layout class branches - house rule 1 holds.
+- `web/src/theme.js` (new) - the two axes as data: `THEME_KEY`, `SCHEME_KEY`, `SCHEMES`, and `paperFor(scheme, theme)` (the per-scheme paper map the theme-color meta reads). One source for the switch, the picker, the bootstrap, and the gate.
+- `web/src/components/SchemeSwitch.jsx` (new) - a native `<select class="scheme-switch">` beside the light/dark switch; writes `<html data-scheme>`, persists `flowforge-paint-scheme`, re-sets theme-color via `paperFor`. Hydration-safe: the first client render is the deterministic default (matching prerender), and an effect adopts the persisted scheme after mount.
+- `web/src/components/ThemeSwitch.jsx` - now scheme-aware (reads `THEME_KEY`/`paperFor` from `theme.js`).
+- `web/src/components/Nav.jsx` - renders `<SchemeSwitch />` before `<ThemeSwitch />`.
+- `web/index.html` - the no-flash bootstrap applies BOTH axes pre-paint (theme + scheme), so a persisted scheme never flashes the wrong palette.
+- `docs/_layouts/default.html` - the docs rig mirrors the whole axis: the same three `[data-scheme]` token blocks (both halves, `--accent-deep` set in each), the `.scheme-switch` picker + CSS, the two-axis bootstrap, and the change handler persisting the same key. The landing shell and the docs now agree on the palette in every scheme.
+- `scripts/check-theme-parity.cjs` (new) + `tests/theme-parity.test.cjs` (new) - the parity gate (house rule 3: a bug caught twice becomes a gate). It reads `SCHEMES` from `web/src/theme.js` and refuses: a scheme present in only one surface (web styles.css vs docs layout), a scheme missing its light half or `--accent`/`--accent-deep` (the missing-accent-deep bug from #18/#19/#21), or an orphan `[data-scheme]` block the picker does not offer. Names file:line. Wired into `npm run check` and `npm run lint:docs`.
+- Negative-tested, not assumed: deleting jade's light half makes the gate exit 1 naming the file; adding a `bogus` scheme block trips the orphan check; a scheme name inside a CSS comment does NOT (comments are stripped first). The seven behavior tests cover each class, green on the live tree.
+- Browser-verified end to end: served `web/dist`, switched the picker to petrol, confirmed `localStorage["flowforge-paint-scheme"]="petrol"`, reloaded, and sampled the rendered page background - iris dark paper `#10131a` -> petrol dark paper `#0a1113`. The no-flash bootstrap was also unit-simulated: with `{scheme: petrol, theme: light}` it sets `data-scheme=petrol`, `data-theme=light`, and `theme-color=#edf3f2` (petrol's light paper).
+- `web/scripts/adopt-icons.mjs` - documented the #20 art ruling at the source: the mark's accent is baked at generation time and stays the STATIONARY iris default (option a), so dau art never mismatches a runtime scheme switch.
+
+**d - retire `repair-404` (BLOCKED, honestly)**
+
+- The root fix for the literal-`$1`/`$2` 404 leak (prestruct#33, root-fix proposal prestruct#42 - generate the 404 through the injection pipeline so function replacers expand) is on prestruct `main` as **1.2.0** but is **NOT on npm**: `npm view prestruct version` = **1.1.0**, and the 1.1.0 tarball still ships the bug (`init/scripts/prerender.js` lines 426-438: `() => `$1...$2`` function replacers whose returns carry literal `$1`/`$2`). Confirmed on `main` (raw `engine/scripts/prerender.js`): the four 404 text tags now go through the injection pipeline, and the canonical uses a function replacer with a literal-result guarantee.
+- Decision: `repair-404.cjs` STAYS until the pin bump that carries 1.2.0. Retiring it now would ship the leak. No code change; the blocker is recorded in `CHANGELOG.md` under "### Blocked".
+
+**Gates (all green on the branch)**
+
+- `npm test` -> **29 pass / 0 fail** (was 22; +7 parity tests).
+- `npm run check` -> PASS (six compile checks + birth-gate 3 workflows/4 checks + theme-parity PASS).
+- `npm run lint:docs` -> PASS (frontmatter, links, style, fiction signatures, jekyll filters, theme-parity).
+- `npm run build --prefix web` -> "[prerender] Done. 3/3 pages rendered."; built CSS carries `[data-scheme=petrol|golden|jade]` plus their `[data-theme=light]` halves.
+
+**House rules**
+
+- No version bump (per the user): `package.json` = `web/package.json` = 0.9.0, still equal.
+- `MANIFEST.md` - rows updated/added for `theme.js`, `SchemeSwitch.jsx`, the styles.css scheme axis, the two-axis `index.html` bootstrap, the docs-layout scheme row, `check-theme-parity.cjs`, `tests/theme-parity.test.cjs`, and the two workflow rows (also fixed a pre-existing merged `docs-deploy.yml`/`release.yml` row).
+- `CHANGELOG.md` - Added entries for the theme files + presets + gate; a Changed entry for the `staging` branch; a Blocked entry for `repair-404`.

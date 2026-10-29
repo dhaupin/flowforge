@@ -41,6 +41,63 @@ html[data-theme="light"] {
   --accent-contrast: #ffffff;
 }
 
+/* ---- Paint schemes (issue #20): the accent-family axis ------------------
+   A second, orthogonal axis beside light/dark. `data-scheme` names a preset;
+   each block overrides ONLY the tokens that carry the scheme's identity, so
+   the layout classes still never branch and no class hardcodes a hex.
+
+   Specificity note: `html[data-scheme="x"]` (0,1,1) outranks `:root` (0,1,0),
+   so a scheme beats the dark base. The LIGHT half of each scheme is written
+   as `html[data-scheme="x"][data-theme="light"]` (0,2,1), which outranks both
+   the scheme's own dark block AND the base light block - so light always wins
+   for a light user, in every scheme. Iris (the default) has no block: it IS
+   the base, and #20's ruling keeps the family default indigo unless a dau
+   opts in (set data-scheme on <html>, or flip the picker).
+
+   Every scheme is a full palette (from #18/#19/#21) so each name means what
+   it says; golden and jade share one warm-graphite cast and differ only in
+   the accent trio, so the shared cast is written once. */
+
+/* Petrol night / pale sea (#18): teal-cast surfaces, iris indigo accent. */
+html[data-scheme="petrol"] {
+  --paper: #0a1113; --surface: #0f191c; --raised: #152126;
+  --ink: #e3eaec; --ink-soft: #8ba3aa;
+  --accent: #8894f4; --accent-deep: #6d7bdc;
+  --moss: #35c38e; --err: #eb7162;
+  --line: #1b2c31; --code-bg: #071013;
+  --nav-bg: rgba(10, 17, 19, 0.88); --accent-contrast: #0a1113;
+}
+html[data-scheme="petrol"][data-theme="light"] {
+  --paper: #edf3f2; --surface: #ffffff; --raised: #e2ecea;
+  --ink: #0e171b; --ink-soft: #5b7078;
+  --accent: #4353c9; --accent-deep: #3342ac;
+  --moss: #178f62; --err: #b24c3d;
+  --line: #d3e0de; --code-bg: #e1ece9;
+  --nav-bg: rgba(237, 243, 242, 0.88); --accent-contrast: #ffffff;
+}
+
+/* Warm-graphite cast shared by golden hour (#21) and jade-on-graphite (#19). */
+html[data-scheme="golden"], html[data-scheme="jade"] {
+  --paper: #121011; --surface: #181515; --raised: #211b19;
+  --ink: #ece6df; --ink-soft: #a89c92;
+  --moss: #8fbe6f; --err: #e2665b;
+  --line: #2b2521; --code-bg: #0d0b0a;
+  --nav-bg: rgba(18, 16, 17, 0.88);
+}
+html[data-scheme="golden"][data-theme="light"], html[data-scheme="jade"][data-theme="light"] {
+  --paper: #f6f1e7; --surface: #ffffff; --raised: #eae2d2;
+  --ink: #1c1712; --ink-soft: #6b6055;
+  --moss: #567a26; --err: #b04a34;
+  --line: #e0d6c3; --code-bg: #efe8d8;
+  --nav-bg: rgba(246, 241, 231, 0.88);
+}
+/* Golden hour accent trio (#21). */
+html[data-scheme="golden"] { --accent: #f0b458; --accent-deep: #d9962c; --accent-contrast: #1a1207; }
+html[data-scheme="golden"][data-theme="light"] { --accent: #a06a0c; --accent-deep: #7d5310; --accent-contrast: #20140b; }
+/* Jade accent trio (#19). */
+html[data-scheme="jade"] { --accent: #45cf83; --accent-deep: #2fae68; --accent-contrast: #101711; }
+html[data-scheme="jade"][data-theme="light"] { --accent: #197a4c; --accent-deep: #115c39; --accent-contrast: #ffffff; }
+
 html {
   background: var(--paper);
   /* Dark-page color-scheme: native controls (scroll bars, form UI, mobile
@@ -85,6 +142,21 @@ body {
 }
 .theme-switch:hover { color: var(--accent); }
 .theme-switch svg { width: 18px; height: 18px; display: block; }
+/* Paint-scheme picker (#20): rides beside the light/dark switch. A native
+   <select> keeps it keyboard- and screen-reader-native; the chrome is
+   token-colored so it reads as part of the shell, not a form control. */
+.scheme-switch {
+  appearance: none; background: none; border: 1px solid transparent;
+  border-radius: 6px; color: var(--ink-soft); cursor: pointer;
+  font: inherit; font-size: 12.5px; padding: 6px 22px 6px 8px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 10px center, right 6px center;
+  background-size: 4px 4px, 4px 4px; background-repeat: no-repeat;
+}
+.scheme-switch:hover { color: var(--accent); border-color: var(--line); }
+.scheme-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scheme-switch option { color: var(--ink); background: var(--surface); }
 /* Sun shows in dark mode (click = go light); moon shows in light mode
    (click = go dark) - the icon is the ACTION, not the state (the agreed
    struct-family convention, crashtest#26). Both icons always render in

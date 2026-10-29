@@ -33,6 +33,11 @@
  *   --tile-bg <hex>    tile background            (default #10131a)
  *   --out <dir>        PNG/SVG output dir         (default web/public)
  *   --docs <dir>       docs icon.svg copy dir     (default docs)
+ *
+ * Scheme note (issue #20): the accent is baked into the mark at generation
+ * time. The ruling is option (a) - a STATIONARY default-mark accent (iris)
+ * regardless of the runtime paint scheme, so dau art never mismatches a
+ * scheme switch. Regenerate with --accent only when the brand itself moves.
  */
 import { Resvg } from '@resvg/resvg-js'
 import { createRequire } from 'node:module'
