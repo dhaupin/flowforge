@@ -6,6 +6,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https
 
 ## [Unreleased] - staging (2026-10-29)
 
+### The family roster names all five arms (2026-10-29)
+
+`packs/README.md` "Who owns what" named three of the five arms (packstruct,
+crashtest, poststruct). It now names the full set: eyestruct (the `check`-profile
+capture lane, conformance-checked through the same pinned SPEC) and govstruct
+(the govern arm - `registry.v1.json` + `members/<id>.json`, the roster this
+rig's site half is a member of), plus a line making explicit that coreforge and
+monoforge are the two forges that compose a member, not arms themselves.
+
 ### Petrol is the shell default; iris retires (2026-10-29)
 
 The shell shipped four paint schemes with iris (a flat indigo) as the default. Iris and petrol are near-identical in practice - both carry an indigo accent and the only real difference is petrol's deep-sea cast - so the default that "reads as a template" was doing no work. The family identity is petrol night / pale sea (#18), so petrol becomes the base and iris is gone: three presets remain (petrol, golden, jade), and a dau that wants the old neutral indigo can still ship it as a free-text scheme with its own block.

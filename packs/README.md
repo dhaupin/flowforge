@@ -41,6 +41,18 @@ exist), optional `armedByKey`, plus acknowledged host-owned keys
 - **dhaupin/poststruct** is the `check`-profile sibling: declarative,
   pure-reading verifiers over files on disk. It is queued on the same SPEC;
   its birth thread reserves its column in the shared refusal matrix.
+- **dhaupin/eyestruct** is the `check`-profile capture lane: it loads
+  `eye-shapes` / `eye-text-leg` / `eye-ci-gate` through the same pinned SPEC,
+  conformance-checked at load, so its `implements: packstruct@1` pin is
+  verifiable rather than honorary.
+- **dhaupin/govstruct** is the govern arm: it holds `registry.v1.json` and
+  `members/<id>.json` - the family roster this rig's site half is a member of.
+  It lints its own pack battery through the same SPEC and publishes the
+  per-member conformance status the family reads.
+
+The two forges compose a member's two halves and are not arms themselves:
+**coreforge** (this rig) rigs the site half, **monoforge** stamps the repo
+half, and **railyard** composes them.
 
 ## Shell rules for this directory
 
