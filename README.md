@@ -34,6 +34,24 @@ Status: **0.9.0, scaffold cut.** The shell ships two sites (landing + docs) and 
 4. **Pins, never floats.** freestruct + prestruct + the pagefind scrape are pinned in the workflow files. Bumping a pin is a deliberate, reviewed step - MANIFEST.md says which receipt to carry.
 5. **Adopt explicitly.** Start from a checkout, not an npm install: diff this rig against your target repo (intent: a diff that shows ONLY your brand data), replace every YOUR... value, remove sample pages, wire your content.
 
+## How an adopter consumes the rig (the two halves, and the drift rule)
+
+The rig is two halves, and they reach an adopter two different ways:
+
+- **The tool (`lib/`)** is versioned once. A repo that can `import` it consumes it by `npm install` - no copy, so no drift is possible. This is the half that should grow.
+- **The site (`web/` + `docs/` + `site.config.js`)** is consumed by **stamping** (`templates/<profile>/`), because a zero-install tree cannot import the rig at runtime. A stamped tree **vendors** the gates into its own `scripts/`, flattened (`lib/gates/x.cjs` requires `../root.cjs`; a flattened `scripts/x.cjs` requires `./root.cjs`) and identity-substituted (`__NAME__` -> the adopter's name).
+
+**A vendored copy drifts the moment the rig moves, and nothing in the adopter can tell:** `npm run lint:docs` stays green on the OLD gate. The answer is `lib/gate-drift.mjs` - the consumption check:
+
+```bash
+node lib/gate-drift.mjs --adopter /path/to/adopter        # exit 1 on REAL drift
+node lib/gate-drift.mjs --adopter /path/to/adopter --json
+```
+
+It normalizes the two transforms every vendored copy carries BY DESIGN (path flatten + identity), strips comments, then diffs what is LEFT. A surviving difference is REAL logic drift - a rule the rig gained that the adopter does not have. It also reports MISSING gates (a whole rule absent). So the consumption contract is mechanical, not a memory: **the rig is the source; the adopter's `scripts/` is a receipt that must still match it, and `gate-drift` proves it on demand.** Re-pulling is a reviewed step (copy from `lib/gates/`, carry the receipt), never a silent `cp`.
+
+**The dogfood uses the same code path as an adopter.** The gates resolve their SITE root by walking up to the nearest `site.config.js` (skipping any candidate under `node_modules`), so one code path serves both `web/` + `docs/` at the rig root and an installed/stamped adopter - there is no "rig-only" branch to drift.
+
 ## Verify before shipping (the same gates the family runs)
 
 ```bash

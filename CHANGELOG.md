@@ -12,6 +12,7 @@ The rig splits in two halves with two delivery models (PRD 7): the TOOL (`lib/`)
 
 - `lib/gate-drift.mjs` (new) - answers "has the rig moved under us?" mechanically. It normalizes the two transforms every vendored copy carries BY DESIGN (the path flatten `../root.cjs` -> `./root.cjs`, and the identity substitution), strips comments so a rule is compared to a rule, then diffs what is LEFT. A surviving difference is REAL logic drift; a missing gate is the loudest drift of all. `--adopter <dir>` (exit 1 = drift, exit 2 = usage); `--json` for a machine-readable report. Run against govstruct it now PASSES (11/11 gates carry the rig's rules); against eyestruct - the older generation this rig pulled FROM - it correctly reports 11 behind.
 - `tests/gate-drift.test.cjs` (new) - the verb both ways: a freshly vendored copy is current, a mutated rule refuses by name, a missing gate reports MISSING, and a tree with no `scripts/` is a usage refusal (never a silent pass).
+- `README.md` - a "How an adopter consumes the rig" section: the two halves and their two delivery models (`lib/` by `npm install`, the site by stamping), the vendored-copy drift rule, and the `gate-drift` check as the mechanical consumption contract. The dogfood and an adopter share one code path (the gates resolve their SITE root by walking up to the nearest `site.config.js`).
 
 ### Hardening parity: eyestruct's production gates pulled into the rig (2026-10-29)
 
