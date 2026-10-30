@@ -12,6 +12,7 @@ lib/                    the TOOL (versioned once, imported by adopters)
   sync.mjs              fans the identity out to the non-JS surfaces
   template.mjs          builds templates/<name>/ from the dogfood tree
   templates.mjs         the template REGISTRY + chain resolver (vant chain shape)
+  gate-drift.mjs        does an adopter's vendored scripts/ still match the rig? (consumption check)
   lint-packs.cjs        the packstruct wrapper verb
   ship-from-download.cjs the phone publish lane
 templates/coreforge/    the FULL shell `coreforge create` stamps (GENERATED) - CHAINS coreforge-headless

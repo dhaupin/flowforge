@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https
 
 ## [Unreleased] - staging (2026-10-29)
 
+### The consumption model: a gate-drift verb (2026-10-29)
+
+The rig splits in two halves with two delivery models (PRD 7): the TOOL (`lib/`) reaches a library adopter by `npm install` - no copy, so `npm update` carries a fix - while the SITE (`web/` + `docs/` + `site.config.js`) is stamped once by `coreforge create`. But a SITE adopter VENDORS the gates into its own `scripts/` (flattened, identity substituted), because a zero-install tree cannot import the rig at runtime. That copy drifts the moment the rig moves, and nothing in the adopter can tell - `npm run lint:docs` stays green on the OLD gate. This session found exactly that: govstruct's vendored `check-jekyll-filters.cjs` predated the unknown-tag rule this rig just gained.
+
+- `lib/gate-drift.mjs` (new) - answers "has the rig moved under us?" mechanically. It normalizes the two transforms every vendored copy carries BY DESIGN (the path flatten `../root.cjs` -> `./root.cjs`, and the identity substitution), strips comments so a rule is compared to a rule, then diffs what is LEFT. A surviving difference is REAL logic drift; a missing gate is the loudest drift of all. `--adopter <dir>` (exit 1 = drift, exit 2 = usage); `--json` for a machine-readable report. Run against govstruct it now PASSES (11/11 gates carry the rig's rules); against eyestruct - the older generation this rig pulled FROM - it correctly reports 11 behind.
+- `tests/gate-drift.test.cjs` (new) - the verb both ways: a freshly vendored copy is current, a mutated rule refuses by name, a missing gate reports MISSING, and a tree with no `scripts/` is a usage refusal (never a silent pass).
+
 ### Hardening parity: eyestruct's production gates pulled into the rig (2026-10-29)
 
 Gap analysis of a coreforge-stamped tree against eyestruct's vetted rig (govstruct#21 landed the shell; this closes the correctness gaps the pull left behind). eyestruct is the older, hand-hardened generation; the rig absorbed most of it, but regressed on the docs-correctness axis. Fixed here, at the source, so every adopter inherits it.
