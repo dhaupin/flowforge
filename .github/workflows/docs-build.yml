@@ -1,8 +1,8 @@
 name: Docs build (reusable)
 
 # The docs lane, promoted to a reusable workflow (issue #9). The runbook it
-# encodes had been hand-copied three times across the rig (flowforge /
-# gistory / eyestruct) and the copies had already drifted apart - Ruby 3.2
+# encodes had been hand-copied three times across the rig and the copies
+# had already drifted apart - Ruby 3.2
 # vs 3.4, upload-pages-artifact v3 vs v5, a pagefind scrape vs an npm pin.
 # One copy lives here; each project keeps a thin caller that sets its own
 # inputs instead of a fourth drifted copy.
@@ -53,6 +53,11 @@ on:
         type: string
         required: false
         default: ^1.1.0
+      strict:
+        description: Run the freestruct post-build layer in --strict (broken internal links fail the build). The family default is true.
+        type: boolean
+        required: false
+        default: true
     outputs:
       pagefind-version:
         description: The pagefind version that was installed.
@@ -69,6 +74,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v5
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      # The node-only gate chain (frontmatter, links, style, fiction
+      # signatures, the Liquid trap, theme parity) runs BEFORE Jekyll so a
+      # source bug is named at cause in lint:docs output, not surfaced as a
+      # Jekyll stack trace after a full Ruby boot. Arm-gated: a repo with no
+      # lint:docs script skips (vacuous green, never false-red).
+      - name: Install (root) + docs gates
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['lint:docs']?0:1)"; then
+            if [ -f package-lock.json ]; then npm ci --no-fund --no-audit; fi
+            npm run lint:docs
+          else
+            echo "no lint:docs script - skipping the docs gates"
+          fi
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
@@ -120,21 +144,22 @@ jobs:
         working-directory: ${{ inputs.docs-path }}
         run: ./pagefind --site _site
 
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v5
-        with:
-          node-version: ${{ inputs.node-version }}
-
       # freestruct consumes, relative to the REPO ROOT:
       #   docs/freestruct.config.yml (config) / docs/_freestruct/
       #   inject-brand.html (template) / docs/_site (output default)
       # Invoke the engine directly with node (bin/freestruct.mjs forwards to
       # the same runInject(); node skips any exec-bit / shebang questions).
+      # --strict (default): the report-only classes (broken internal links,
+      # dangerous tags) become build failures - the eyestruct post-1.0.0
+      # contract. A caller can pass strict: false to keep the tolerant pass.
       - name: Install freestruct
         run: npm install --no-save --no-audit --no-fund "freestruct@${{ inputs.freestruct-version }}"
 
       - name: Run freestruct post-build layer
-        run: node node_modules/freestruct/engine/inject.js
+        run: |
+          STRICT=""
+          if [ "${{ inputs.strict }}" = "true" ]; then STRICT="--strict"; fi
+          node node_modules/freestruct/engine/inject.js $STRICT
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

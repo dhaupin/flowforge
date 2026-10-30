@@ -10,10 +10,12 @@ lib/                    the TOOL (versioned once, imported by adopters)
   gates/                the check-*.cjs family (frontmatter/links/style/fiction/liquid/theme/birth/census)
   root.cjs / root.mjs   resolve the SITE root (walk up to site.config.js)
   sync.mjs              fans the identity out to the non-JS surfaces
-  template.mjs          builds templates/site/ from the dogfood tree
+  template.mjs          builds templates/<name>/ from the dogfood tree
+  templates.mjs         the template REGISTRY + chain resolver (vant chain shape)
   lint-packs.cjs        the packstruct wrapper verb
   ship-from-download.cjs the phone publish lane
-templates/site/         the copy source `flowforge create` stamps (GENERATED - npm run template)
+templates/coreforge/    the FULL shell `coreforge create` stamps (GENERATED) - CHAINS coreforge-headless
+templates/coreforge-headless/  CI ONLY (.github/ battery) (GENERATED)
 web/                    the prestruct landing shell (React/Vite, prerendered) - the dogfood
   src/styles.css        the ENTIRE design system - semantic tokens only
   src/site.js           the web bundle's accessor for site.config.js
@@ -29,7 +31,9 @@ MANIFEST.md             every extracted file -> source SHA + engine pins
 packs/README.md         the /packs contract (see below) - packs live in packs/public/<name>/
 ```
 
-The tool (`lib/`) and the site (`web/` + `docs/` + `site.config.js`) are separate halves. The tool is versioned once and reaches adopters by `npm install`; the site is the dogfood, left in place (PRD 7/9). `templates/site/` is generated from the dogfood by `lib/template.mjs` - never hand-edit it; run `npm run template`.
+The tool (`lib/`) and the site (`web/` + `docs/` + `site.config.js`) are separate halves. The tool is versioned once and reaches adopters by `npm install`; the site is the dogfood, left in place (PRD 7/9). `templates/<name>/` is generated from the dogfood by `lib/template.mjs` - never hand-edit it; run `npm run template`.
+
+Templates **chain** the way [vant](https://github.com/dhaupin/vant) chains skills (`docs/essential/extensibility.md`): a profile's `TEMPLATE.md` frontmatter carries a `chain:` list, and `lib/templates.mjs` resolves it children-first with the parent winning on a path collision. `coreforge` chains `coreforge-headless`, so the CI battery lives ONCE (in the headless profile) and the full shell inherits it - one copy, no drift between the two shapes. A chain cycle refuses, named.
 
 ## House rules (each one paid for in real bugs)
 

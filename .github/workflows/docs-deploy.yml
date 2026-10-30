@@ -5,8 +5,8 @@ name: Deploy Docs
 # layer, the Pages artifact upload - lives ONCE in docs-build.yml; this file
 # keeps only what is per-repo: the trigger, the permissions, the concurrency
 # group, and the deploy job. The three hand-copied runbooks this replaces
-# (flowforge / gistory / eyestruct) had already drifted apart; the lane is
-# now a versioned call, not a fourth copy.
+# had already drifted apart; the lane is now a versioned call, not a fourth
+# copy.
 #
 # The deploy job stays gated to main (issue #30, point 3 - the trap): once
 # staging is in the push trigger, the trigger no longer keeps its content out

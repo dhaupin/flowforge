@@ -11,7 +11,8 @@ Status: **0.9.0, scaffold cut.** The shell ships two sites (landing + docs) and 
 | `web/`           | the landing shell: prestruct-prerendered React/Vite app, light/dark theme switch (no-flash bootstrap, icon-as-action), tokens-only palette (dark + light), nav/sidebar/footer from one vocabulary file, island engine, placeholder pages + a highlighted terminal block |
 | `docs/`          | the Jekyll rig: fixed header (search > GitHub icon > theme switch > menu), slide-out sidebar, pagefind modal search (Cmd+K), Rouge token colors shared with the landing, freestruct SEO layer, sample page proving frontmatter + highlighting |
 | `lib/`           | the TOOL, versioned once and imported by adopters: `gates/` (frontmatter, links (doubled-baseurl trap), style/voice, fiction signatures, the single-arg Liquid filter trap, theme parity, brand census, birth-gate), the `sync` fan-out, the `template` builder, the packstruct wrapper, and the phone publish lane |
-| `templates/site/` | the copy source `flowforge create` stamps - GENERATED from the dogfood by `lib/template.mjs` (`npm run template`), tokenized (`__NAME__`, `__SITE_URL__`, ...) the way monoforge tokenizes its blocks |
+| `templates/coreforge/` | the FULL shell `coreforge create` stamps - GENERATED from the dogfood by `lib/template.mjs` (`npm run template`), tokenized (`__NAME__`, `__SITE_URL__`, ...) the way monoforge tokenizes its blocks. **CHAINS** `coreforge-headless` |
+| `templates/coreforge-headless/` | CI ONLY - the `.github/` battery with no sites, for a repo that brings its own landing/docs |
 | `.github/workflows/` | `docs-deploy.yml` (thin caller: trigger + Pages deploy), `docs-build.yml` (reusable: Jekyll + hardened pagefind scrape + PINNED freestruct layer + Pages artifact), `release.yml` (npm Trusted Publishing OIDC template) |
 | `MANIFEST.md`    | the receipts: every extracted file -> its source repo+SHA, engine pins, and the one review rule for bumping them   |
 
@@ -40,7 +41,7 @@ npm ci                                   # hermetic - one root devDep (js-yaml, 
 npm test                                 # version-truth census + ship-lane behavior tests
 npm run check                            # node --check the gates + birth-gate + sync:check + template:check + brand census
 npm run lint:docs                        # frontmatter, links, style, fiction signatures, liquid trap, theme parity
-npm run template                         # rebuild templates/site/ after a shell change (never hand-edit it)
+npm run template                         # rebuild templates/<name>/ after a shell change (never hand-edit it)
 npm run lint:packs                       # packstruct over packs/ (needs a packstruct install; exit 2 names the fix)
 npm install --prefix web && npm run build --prefix web   # 3/3 prerender is healthy
 ```

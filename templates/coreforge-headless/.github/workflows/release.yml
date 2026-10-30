@@ -1,0 +1,197 @@
+name: release
+
+# The repo-cut release ladder (eyestruct's proven shape, adopted verbatim:
+# the eyestruct publish lane). A tag drives the
+# whole ladder end-to-end, and nothing is earned by a green publish step
+# alone - eyestruct's 1.0.0 cut proved publish CAN go green while the
+# registry result is wrong, because nothing asserted the tarball between
+# proof-of-publish and proof-of-work.
+#
+#   1. publish  - npm Trusted Publishing (OIDC): NO publish token exists
+#                 anywhere; the job's id-token proves the tarball came from
+#                 THIS tree. npm >= 11.5.1 floor installed in-lane. The
+#                 battery rides automatically: npm publish runs
+#                 prepublishOnly (npm test && npm run check && npm run
+#                 lint:docs) - a red battery cannot mint a tarball. Gate:
+#                 0.x refused (the family ladder: 0.x is the manual ship
+#                 lane), and on a tag push the tag must equal the packaged
+#                 version. Every github context value reaches the script
+#                 through env, never inline interpolation.
+#   2. release  - the GH release object is cut from the pushed tag. Its
+#                 notes are EXTRACTED from the CHANGELOG's own [version]
+#                 section (lib/release-notes.cjs) - a release body that
+#                 disagrees with the changelog is drift, and an empty
+#                 extraction refuses the cut. Idempotent.
+#   3. verify   - the post-publish truth (lib/verify-release.cjs):
+#                 --npm registry latest == this tree's version, the served
+#                 tarball's sha512 == the registry integrity metadata,
+#                 provenance present, then the full pack ladder on the
+#                 served tarball; --gh the release object exists, targets
+#                 the tag's commit, and its source tarball diffs clean
+#                 against `git archive` of that commit.
+#
+# verify-only dispatch mode: no publish, no release minting - the verify
+# job re-runs the trust ladder against what is ALREADY published.
+#
+# The pack ladder also runs OFFLINE in the battery on every push
+# (tests/release-verify.test.cjs), so the contents assertions have a
+# standing CI receipt instead of living only on release days.
+#
+# Adapt `on.push.tags` / the publish dir if your package is not at the repo
+# root. An adopter states its own rules as flags in the verify step
+# (--exports / --allow / --probe); the two scripts are identical across the
+# family, so a fix here is one copy.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'publish = registry cut | verify-only = re-run the trust ladder against what is already served'
+        required: false
+        default: 'publish'
+        type: choice
+        options: ['publish', 'verify-only']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    if: github.event_name == 'push' || inputs.mode != 'verify-only'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+      tag: ${{ steps.gate.outputs.tag }}
+    steps:
+      # fetch-depth: 0 - the verify ladder's git archive needs the release
+      # commit reachable.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v5
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: npm floor for trusted publishing (11.5.1+)
+        run: npm install -g npm@^11
+
+      - id: gate
+        name: the gate - 0.x refused, tag == packaged version
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -e
+          V="$(node -p "require('./package.json').version")"
+          case "$V" in
+            0.*) echo "publish gate: refusing $V - the OIDC lane serves 1.0.0+ only (the family release ladder: 0.x is the manual ship lane)"; exit 1 ;;
+          esac
+          REF="$TAG_REF"
+          EVENT="$EVENT_NAME"
+          if [ "$EVENT" = "push" ]; then
+            if [ "$REF" != "v$V" ]; then
+              echo "publish gate: refusing - tag $REF does not equal the packaged version v$V (a tag that lies about its version never cuts)"; exit 1
+            fi
+          fi
+          TAG="v$V"
+          echo "publish gate: $TAG passes the 0.x refusal and the tag==version gate"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install (hermetic when a lockfile ships)
+        # The shell ships a root package-lock.json (one devDep: js-yaml, the
+        # birth-gate parser), so this is a real hermetic `npm ci`. Adopters
+        # with no root deps ship no lockfile and get the no-op branch.
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-fund --no-audit
+          else echo "no root package-lock.json - nothing to install at the root"; fi
+
+      - name: npm publish (OIDC - no token secret involved)
+        # prepublishOnly rides this automatically: npm test && npm run check
+        # && npm run lint:docs. A dirty or unproven tree cannot pack.
+        run: npm publish --provenance --access public
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+      # BLOCK_VERSION/TAG arrive through env from the publish job's outputs
+      # - the same no-inline-interpolation rule the gate obeys. notes.md
+      # lives in RUNNER_TEMP: never a silent overwrite of a repo file that
+      # happens to carry the name.
+      #
+      # The tool scripts (release-notes.cjs / verify-release.cjs) resolve from
+      # either the dogfood `lib/` (this repo IS the rig) or an installed
+      # `node_modules/coreforge/lib/` (a stamped adopter). One lookup, so the
+      # same workflow file works in both shapes - the tool half travels by npm
+      # install, never by copy (PRD 7).
+      - name: resolve the rig tool scripts
+        id: tool
+        run: |
+          for d in lib node_modules/coreforge/lib; do
+            if [ -f "$d/release-notes.cjs" ]; then echo "dir=$d" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "::error::could not find release-notes.cjs in lib/ or node_modules/coreforge/lib/ - install coreforge or run in the rig"
+          exit 1
+      - name: extract the release notes from the changelog (refuses empty)
+        env:
+          BLOCK_VERSION: ${{ needs.publish.outputs.version }}
+          TOOL: ${{ steps.tool.outputs.dir }}
+        run: node "$TOOL/release-notes.cjs" "$BLOCK_VERSION" > "$RUNNER_TEMP/notes.md"
+      - name: cut the GH release from the tag (idempotent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BLOCK_VERSION: ${{ needs.publish.outputs.version }}
+          BLOCK_TAG: ${{ needs.publish.outputs.tag }}
+        run: |
+          TAG="$BLOCK_TAG"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "release $TAG already exists - not re-minting; the verify job judges its truth"
+          else
+            gh release create "$TAG" --title "__NAME__ $BLOCK_VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+
+  # No `needs` on release here by design under the if: the verify leg runs
+  # after release on a real cut, but ALSO stands alone in verify-only mode
+  # (publish skipped, release skipped, the ladder judged against what is
+  # already served and released).
+  verify:
+    needs: publish
+    if: >-
+      always() &&
+      (needs.publish.result == 'success' ||
+       (needs.publish.result == 'skipped' && inputs.mode == 'verify-only'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v5
+        with: { node-version: '22' }
+      - name: the post-publish trust ladder (npm + GH release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -e
+          V="$(node -p "require('./package.json').version")"
+          # This shell ships the whole rig on purpose (web/, docs/, tests/,
+          # labs/, packs/, .github/ - the copy source an adopter diffs), so
+          # those prefixes are permitted by name; the family defaults still
+          # refuse source maps, .env*, and node_modules. An adopter narrows
+          # --allow to its own shape.
+          ALLOW="web/,docs/,tests/,labs/,packs/,templates/,.github/"
+          # --exports only when the package declares an exports map (this
+          # shell has none; a library adopter does).
+          # The tool scripts resolve from lib/ (the rig) or the installed
+          # package (an adopter) - the same lookup the release job uses.
+          TOOL="lib"
+          [ -f "lib/verify-release.cjs" ] || TOOL="node_modules/coreforge/lib"
+          node "$TOOL/verify-release.cjs" --npm --version "$V" --allow "$ALLOW"
+          node "$TOOL/verify-release.cjs" --gh --tag "v$V"
