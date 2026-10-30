@@ -111,7 +111,7 @@ export default {
   repo: 'https://github.com/me/my-site',
   author: 'me',
   license: 'MIT',
-  theme: { defaultMode: 'dark', defaultScheme: 'iris' },
+  theme: { defaultMode: 'dark', defaultScheme: 'petrol' },
   nav: [
     { label: 'Home', to: '/', end: true, group: 'site' },
     { label: 'GitHub', href: 'https://github.com/me/my-site', group: 'out' },

@@ -28,37 +28,25 @@
     <meta name="color-scheme" content="dark light">
     <style>
         :root {
-            --paper: #10131a; --surface: #161b24; --raised: #1d2430; /* surface reconciled to the web token sheet (web styles.css truth); was the crashtest docs shade #0d1017 - brand values are adopter data, one sheet wins */
-            --ink: #e7eaf1; --ink-soft: #98a2b3; --ink-light: #98a2b3; /* tune BOTH toward AA on YOUR footer bg - crashtest ran 3.78:1 and it failed */
-            --accent: #6d8cff; --accent-deep: #5166c7; --moss: #3fae72; --err: #e06557;
-            --line: #2a3140; --code-bg: #0d1017;
-            --header-height: 54px; --sidebar-width: 240px;
-        }
-        /* Light mode: the same identity, ink on pale paper
-           (matches the landing site's html[data-theme="light"] tokens). */
-        html[data-theme="light"] {
-            --paper: #f5f6fa; --surface: #ffffff; --raised: #e6e9f2;
-            --ink: #171b26; --ink-soft: #5b6575; --ink-light: #5b6575;
-            --accent: #4055c5; --accent-deep: #33449e; --moss: #2e7d4f; --err: #b04b3f;
-            --line: #d9dee9; --code-bg: #e9ecf3;
-        }
-        /* Paint schemes (issue #20) - the same presets the landing shell ships,
-           mirrored here so the two surfaces agree. Iris is the default (the
-           blocks above); each scheme overrides only its identity tokens, and
-           the light half is a [data-scheme][data-theme="light"] block so light
-           always wins in every scheme (specificity, same as web/src/styles.css). */
-        html[data-scheme="petrol"] {
-            --paper: #0a1113; --surface: #0f191c; --raised: #152126;
-            --ink: #e3eaec; --ink-soft: #8ba3aa; --ink-light: #8ba3aa;
+            --paper: #0a1113; --surface: #0f191c; --raised: #152126; /* petrol night (#18) - the base tokens ARE the petrol scheme, the family default */
+            --ink: #e3eaec; --ink-soft: #8ba3aa; --ink-light: #8ba3aa; /* tune BOTH toward AA on YOUR footer bg - crashtest ran 3.78:1 and it failed */
             --accent: #8894f4; --accent-deep: #6d7bdc; --moss: #35c38e; --err: #eb7162;
             --line: #1b2c31; --code-bg: #071013;
+            --header-height: 54px; --sidebar-width: 240px;
         }
-        html[data-scheme="petrol"][data-theme="light"] {
+        /* Light mode: the same identity, sea-ink on pale sea paper
+           (matches the landing site's html[data-theme="light"] tokens). */
+        html[data-theme="light"] {
             --paper: #edf3f2; --surface: #ffffff; --raised: #e2ecea;
             --ink: #0e171b; --ink-soft: #5b7078; --ink-light: #5b7078;
             --accent: #4353c9; --accent-deep: #3342ac; --moss: #178f62; --err: #b24c3d;
             --line: #d3e0de; --code-bg: #e1ece9;
         }
+        /* Paint schemes (issue #20) - the same presets the landing shell ships,
+           mirrored here so the two surfaces agree. Petrol is the default (the
+           blocks above); each scheme overrides only its identity tokens, and
+           the light half is a [data-scheme][data-theme="light"] block so light
+           always wins in every scheme (specificity, same as web/src/styles.css). */
         html[data-scheme="golden"], html[data-scheme="jade"] {
             --paper: #121011; --surface: #181515; --raised: #211b19;
             --ink: #ece6df; --ink-soft: #a89c92; --ink-light: #a89c92;
@@ -235,12 +223,12 @@
     </style>
     <script>
         // Theme + paint-scheme bootstrap (before first paint): the default
-        // tokens are dark/iris, so a persisted light theme and/or a persisted
+        // tokens are dark/petrol, so a persisted light theme and/or a persisted
         // scheme need applying here. Keep the keys in sync with the toggle
         // handlers below and with the landing shell (web/src/theme.js).
         try {
             var s = localStorage.getItem('{{ site.scheme_key }}');
-            if (s && s !== 'iris') document.documentElement.dataset.scheme = s;
+            if (s && s !== 'petrol') document.documentElement.dataset.scheme = s;
             if (localStorage.getItem('{{ site.theme_key }}') === 'light') {
                 document.documentElement.dataset.theme = 'light';
             }
@@ -263,7 +251,6 @@
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
             </a>
             <select class="scheme-switch" id="schemeSwitch" aria-label="Paint scheme">
-                <option value="iris">iris</option>
                 <option value="petrol">petrol</option>
                 <option value="golden">golden</option>
                 <option value="jade">jade</option>
@@ -333,12 +320,12 @@
         try { localStorage.setItem('{{ site.theme_key }}', next); } catch (e) {}
     });
 
-    // Paint-scheme picker (issue #20). Iris is the default (no attribute).
+    // Paint-scheme picker (issue #20). Petrol is the default (no attribute).
     var schemeSwitch = document.getElementById('schemeSwitch');
-    schemeSwitch.value = document.documentElement.dataset.scheme || 'iris';
+    schemeSwitch.value = document.documentElement.dataset.scheme || 'petrol';
     schemeSwitch.addEventListener('change', function () {
         var el = document.documentElement;
-        if (this.value === 'iris') delete el.dataset.scheme;
+        if (this.value === 'petrol') delete el.dataset.scheme;
         else el.dataset.scheme = this.value;
         try { localStorage.setItem('{{ site.scheme_key }}', this.value); } catch (e) {}
     });

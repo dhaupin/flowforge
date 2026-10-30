@@ -6,6 +6,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [SemVer](https
 
 ## [Unreleased] - staging (2026-10-29)
 
+### Petrol is the shell default; iris retires (2026-10-29)
+
+The shell shipped four paint schemes with iris (a flat indigo) as the default. Iris and petrol are near-identical in practice - both carry an indigo accent and the only real difference is petrol's deep-sea cast - so the default that "reads as a template" was doing no work. The family identity is petrol night / pale sea (#18), so petrol becomes the base and iris is gone: three presets remain (petrol, golden, jade), and a dau that wants the old neutral indigo can still ship it as a free-text scheme with its own block.
+
+- `web/src/styles.css` - `:root` and its light half now carry the petrol values (#18); the `[data-scheme="petrol"]` blocks are gone (petrol IS the base). Golden hour and jade-on-graphite stay as opt-in presets.
+- `docs/_layouts/default.html` - the same: base tokens become petrol, the petrol blocks are dropped, the picker loses its `iris` option.
+- `web/src/theme.js` - `SCHEMES = ['petrol', 'golden', 'jade']`; the paper map drops iris and `paperFor` falls back to petrol.
+- `web/src/components/SchemeSwitch.jsx`, `ThemeSwitch.jsx`, `web/index.html` bootstrap, `site.config.js` - every `iris` default becomes `petrol` (no attribute = the base = petrol).
+- `lib/gates/check-theme-parity.cjs` + `tests/theme-parity.test.cjs` - the gate's default scheme is now `schemes[0]` (petrol), and the fixtures follow.
+
 ### The brand census scans filenames too (2026-10-29)
 
 The promotion merge resurrected a stray `web/public/flowforge-logo.jpg` - main's direct `Logo` commit had dropped the art at the public root, and Phase 1 had already renamed the real master to `web/public/brand/logo.jpg` (a brand name in a filename is invisible to a content scan). The merge brought the old path back, the template builder copied it, and `template:check` failed on CI. This class has now bitten twice, so it becomes a gate.

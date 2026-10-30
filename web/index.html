@@ -36,27 +36,26 @@
   <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#10131a" />
+  <meta name="theme-color" content="#0a1113" />
 
   <script>
     // Theme + paint-scheme bootstrap: apply a persisted light theme and a
     // persisted paint scheme before the stylesheet paints (the default tokens
-    // are dark/iris). Non-critical: wrapped in try in case storage is
+    // are dark/petrol). Non-critical: wrapped in try in case storage is
     // unavailable (private mode). Keep the keys and the paper map in sync with
     // src/theme.js, ThemeSwitch.jsx, and SchemeSwitch.jsx (the meta color
     // depends on BOTH axes).
     try {
       var paper = {
-        iris:   { dark: '#10131a', light: '#f5f6fa' },
         petrol: { dark: '#0a1113', light: '#edf3f2' },
         golden: { dark: '#121011', light: '#f6f1e7' },
         jade:   { dark: '#121011', light: '#f6f1e7' }
       }
-      var scheme = localStorage.getItem('site-paint-scheme') || 'iris'
-      if (paper[scheme] && scheme !== 'iris') document.documentElement.dataset.scheme = scheme
+      var scheme = localStorage.getItem('site-paint-scheme') || 'petrol'
+      if (paper[scheme] && scheme !== 'petrol') document.documentElement.dataset.scheme = scheme
       var light = localStorage.getItem('site-theme') === 'light'
       if (light) document.documentElement.dataset.theme = 'light'
-      var p = (paper[scheme] || paper.iris)[light ? 'light' : 'dark']
+      var p = (paper[scheme] || paper.petrol)[light ? 'light' : 'dark']
       document.currentScript.previousElementSibling.setAttribute('content', p)
     } catch (e) {}
   </script>

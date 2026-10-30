@@ -1,43 +1,48 @@
-/* flowforge shell theme - neutral graphite + UI indigo, dark-first, with a
-   full light theme as the second half of one token set. Every color rides
-   a semantic token (paper/surface/raised/ink/ink-soft/accent/moss/err/
-   line/code-bg/nav-bg/accent-contrast): re-tune your brand by editing
-   THESE values only - the layout classes never branch on the theme and no
-   class ever hardcodes a hex. The token structure is shared across the
-   struct family (several deployed daus land here); keep the names. */
+/* flowforge shell theme - petrol night / pale sea (issue #18), dark-first,
+   with a full light theme as the second half of one token set. Every color
+   rides a semantic token (paper/surface/raised/ink/ink-soft/accent/moss/err/
+   line/code-bg/nav-bg/accent-contrast): re-tune your brand by editing THESE
+   values only - the layout classes never branch on the theme and no class
+   ever hardcodes a hex. The token structure is shared across the struct
+   family (several deployed daus land here); keep the names.
+
+   The base tokens ARE the petrol scheme (#18). Petrol carries no
+   `[data-scheme]` block: it IS `:root`, the default a dau gets with no
+   attribute set. Golden hour (#21) and jade-on-graphite (#19) remain
+   opt-in presets on the paint-scheme axis below. */
 
 :root {
-  --paper: #10131a;
-  --surface: #161b24;
-  --raised: #1d2430;
-  --ink: #e7eaf1;
-  --ink-soft: #98a2b3;
-  --accent: #6d8cff;      /* your accent */
-  --accent-deep: #5166c7;
-  --moss: #3fae72;        /* success / positive green */
-  --err: #e06557;         /* violation / negative red */
-  --line: #2a3140;
-  --code-bg: #0d1017;
-  --nav-bg: rgba(16, 19, 26, 0.88);
-  --accent-contrast: #0b1020;
+  --paper: #0a1113;       /* petrol ink-black, deep-sea cast */
+  --surface: #0f191c;
+  --raised: #152126;
+  --ink: #e3eaec;
+  --ink-soft: #8ba3aa;    /* seafoam gray */
+  --accent: #8894f4;      /* your accent - iris indigo, the family hue */
+  --accent-deep: #6d7bdc;
+  --moss: #35c38e;        /* success / positive green, seafoam-leaning */
+  --err: #eb7162;         /* violation / negative coral */
+  --line: #1b2c31;
+  --code-bg: #071013;
+  --nav-bg: rgba(10, 17, 19, 0.88);
+  --accent-contrast: #0a1113;
 }
 
-/* Light theme: the same identity, ink on pale paper.
+/* Light theme: the same identity, sea-ink on pale sea paper.
    Tokens only - the whole layout reads them, so one block re-themes the
    site and no layout class ever branches on the theme. */
 html[data-theme="light"] {
-  --paper: #f5f6fa;
+  --paper: #edf3f2;
   --surface: #ffffff;
-  --raised: #e6e9f2;
-  --ink: #171b26;
-  --ink-soft: #5b6575;
-  --accent: #4055c5;      /* darker accent for contrast on pale paper */
-  --accent-deep: #33449e;
-  --moss: #2e7d4f;
-  --err: #b04b3f;
-  --line: #d9dee9;
-  --code-bg: #e9ecf3;
-  --nav-bg: rgba(245, 246, 250, 0.88);
+  --raised: #e2ecea;
+  --ink: #0e171b;         /* sea-ink */
+  --ink-soft: #5b7078;
+  --accent: #4353c9;      /* indigo weighted for pale sea paper (AA) */
+  --accent-deep: #3342ac;
+  --moss: #178f62;
+  --err: #b24c3d;
+  --line: #d3e0de;
+  --code-bg: #e1ece9;
+  --nav-bg: rgba(237, 243, 242, 0.88);
   --accent-contrast: #ffffff;
 }
 
@@ -50,31 +55,13 @@ html[data-theme="light"] {
    so a scheme beats the dark base. The LIGHT half of each scheme is written
    as `html[data-scheme="x"][data-theme="light"]` (0,2,1), which outranks both
    the scheme's own dark block AND the base light block - so light always wins
-   for a light user, in every scheme. Iris (the default) has no block: it IS
-   the base, and #20's ruling keeps the family default indigo unless a dau
-   opts in (set data-scheme on <html>, or flip the picker).
+   for a light user, in every scheme. Petrol (the default) has no block: it IS
+   the base, so a dau gets the family's petrol-night identity unless it opts
+   into another preset (set data-scheme on <html>, or flip the picker).
 
-   Every scheme is a full palette (from #18/#19/#21) so each name means what
-   it says; golden and jade share one warm-graphite cast and differ only in
-   the accent trio, so the shared cast is written once. */
-
-/* Petrol night / pale sea (#18): teal-cast surfaces, iris indigo accent. */
-html[data-scheme="petrol"] {
-  --paper: #0a1113; --surface: #0f191c; --raised: #152126;
-  --ink: #e3eaec; --ink-soft: #8ba3aa;
-  --accent: #8894f4; --accent-deep: #6d7bdc;
-  --moss: #35c38e; --err: #eb7162;
-  --line: #1b2c31; --code-bg: #071013;
-  --nav-bg: rgba(10, 17, 19, 0.88); --accent-contrast: #0a1113;
-}
-html[data-scheme="petrol"][data-theme="light"] {
-  --paper: #edf3f2; --surface: #ffffff; --raised: #e2ecea;
-  --ink: #0e171b; --ink-soft: #5b7078;
-  --accent: #4353c9; --accent-deep: #3342ac;
-  --moss: #178f62; --err: #b24c3d;
-  --line: #d3e0de; --code-bg: #e1ece9;
-  --nav-bg: rgba(237, 243, 242, 0.88); --accent-contrast: #ffffff;
-}
+   Every scheme is a full palette (from #19/#21) so each name means what it
+   says; golden and jade share one warm-graphite cast and differ only in the
+   accent trio, so the shared cast is written once. */
 
 /* Warm-graphite cast shared by golden hour (#21) and jade-on-graphite (#19). */
 html[data-scheme="golden"], html[data-scheme="jade"] {
