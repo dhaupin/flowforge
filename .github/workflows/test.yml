@@ -43,37 +43,52 @@ jobs:
           node-version: '22'
 
       # Hermetic install against the committed root lockfile (the one root
-      # devDependency is js-yaml, for the birth-gate's YAML parse).
-      - name: Install (root, hermetic)
-        run: npm ci --no-fund --no-audit
+      # devDependency is js-yaml, for the birth-gate's YAML parse). A stamped
+      # adopter with no root deps ships no lockfile and gets `npm install`.
+      - name: Install (root)
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-fund --no-audit
+          else npm install --no-fund --no-audit; fi
 
-      # The node:test spine: the version-truth census (flowforge#28) and the
-      # ship-from-download lane behavior tests (flowforge#24). Same legs the
+      # The node:test spine: the version-truth census and the
+      # ship-from-download lane behavior tests. Same legs the
       # prepublishOnly gate runs, so a release cannot outrun its tests.
+      # Arm-gated: an adopter with no tests/ skips instead of false-redding.
       - name: Node test spine
-        run: npm test
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.test?0:1)"; then npm test
+          else echo "no test script - skipping the node:test spine"; fi
 
-      # The five lib/gates gates compile then run (frontmatter, links, style,
+      # The lib/gates gates compile then run (frontmatter, links, style,
       # fiction signatures, Liquid filters) plus the birth-gate lane
-      # (flowforge#5: YAML-parse every workflow, mount independence, gc-safe
-      # serde, determinism note). Same ritual as the README.
+      # (YAML-parse every workflow, mount independence, gc-safe serde,
+      # determinism note). Arm-gated on the scripts existing, so an
+      # adopter that installs the tool (not the dogfood tree) still goes green.
       - name: Shell gates
-        run: npm run check && npm run lint:docs
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.check?0:1)"; then npm run check
+          else echo "no check script - skipping the shell gates"; fi
+          if node -e "process.exit(require('./package.json').scripts?.['lint:docs']?0:1)"; then npm run lint:docs
+          else echo "no lint:docs script - skipping the docs gates"; fi
 
       # The landing shell builds through the engine's own gates: prestruct
       # build, then web/scripts/repair-404.cjs (the prestruct#33 assert-clean
       # repair - any leftover $1/$2, missing description, or off-origin
-      # canonical exits 1 and red-lights this job).
+      # canonical exits 1 and red-lights this job). Arm-gated on web/.
       - name: Install web deps
+        if: ${{ hashFiles('web/package.json') != '' }}
         run: npm install --prefix web --no-audit --no-fund
 
       - name: Web build
+        if: ${{ hashFiles('web/package.json') != '' }}
         run: npm run build --prefix web
 
       # Jekyll build of docs/ (PR coverage the docs-deploy lane doesn't give -
       # that workflow runs on main pushes only). Ruby deps ride the Gemfile;
       # bigdecimal is declared there on purpose (Ruby 3.4 bundled gem).
+      # Arm-gated on docs/Gemfile so a site with no docs skips.
       - name: Setup Ruby
+        if: ${{ hashFiles('docs/Gemfile') != '' }}
         uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: '3.2'
@@ -81,6 +96,7 @@ jobs:
           working-directory: './docs'
 
       - name: Docs build
+        if: ${{ hashFiles('docs/Gemfile') != '' }}
         run: cd docs && bundle exec jekyll build
         env:
           JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

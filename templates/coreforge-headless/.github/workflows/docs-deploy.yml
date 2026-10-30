@@ -1,0 +1,55 @@
+name: Deploy Docs
+
+# Thin caller for the reusable docs lane (issue #9). The build runbook -
+# Jekyll, the hardened pagefind scrape, the pinned freestruct post-build SEO
+# layer, the Pages artifact upload - lives ONCE in docs-build.yml; this file
+# keeps only what is per-repo: the trigger, the permissions, the concurrency
+# group, and the deploy job. The three hand-copied runbooks this replaces
+# had already drifted apart; the lane is now a versioned call, not a fourth
+# copy.
+#
+# The deploy job stays gated to main (issue #30, point 3 - the trap): once
+# staging is in the push trigger, the trigger no longer keeps its content out
+# of production; this guard does. workflow_dispatch is likewise held to main
+# unless deliberately overridden.
+
+on:
+  push:
+    # staging validates the docs build too (a docs change that breaks the
+    # build should red-light on the integration branch, not surprise the
+    # promotion); the deploy job below is gated to main.
+    branches: [main, staging]
+    paths: ['docs/**', '.github/workflows/docs-deploy.yml', '.github/workflows/docs-build.yml']
+  workflow_dispatch:
+
+# Permissions for GitHub Pages deployment. The called workflow inherits this
+# ceiling (it declares contents: read for itself); the deploy half needs
+# pages: write + id-token: write, which only the caller can grant.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/docs-build.yml
+
+  deploy:
+    needs: build
+    # Deploy ONLY from main (issue #30, point 3 - the trap): once staging is
+    # in the push trigger above, the trigger no longer keeps its content out
+    # of production; this guard does. workflow_dispatch is likewise held to
+    # main unless deliberately overridden.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

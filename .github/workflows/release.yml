@@ -1,7 +1,7 @@
 name: release
 
 # The repo-cut release ladder (eyestruct's proven shape, adopted verbatim:
-# dhaupin/eyestruct@4e2b552 .github/workflows/publish.yml). A tag drives the
+# the eyestruct publish lane). A tag drives the
 # whole ladder end-to-end, and nothing is earned by a green publish step
 # alone - eyestruct's 1.0.0 cut proved publish CAN go green while the
 # registry result is wrong, because nothing asserted the tarball between
@@ -124,10 +124,25 @@ jobs:
       # - the same no-inline-interpolation rule the gate obeys. notes.md
       # lives in RUNNER_TEMP: never a silent overwrite of a repo file that
       # happens to carry the name.
+      #
+      # The tool scripts (release-notes.cjs / verify-release.cjs) resolve from
+      # either the dogfood `lib/` (this repo IS the rig) or an installed
+      # `node_modules/coreforge/lib/` (a stamped adopter). One lookup, so the
+      # same workflow file works in both shapes - the tool half travels by npm
+      # install, never by copy (PRD 7).
+      - name: resolve the rig tool scripts
+        id: tool
+        run: |
+          for d in lib node_modules/coreforge/lib; do
+            if [ -f "$d/release-notes.cjs" ]; then echo "dir=$d" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "::error::could not find release-notes.cjs in lib/ or node_modules/coreforge/lib/ - install coreforge or run in the rig"
+          exit 1
       - name: extract the release notes from the changelog (refuses empty)
         env:
           BLOCK_VERSION: ${{ needs.publish.outputs.version }}
-        run: node lib/release-notes.cjs "$BLOCK_VERSION" > "$RUNNER_TEMP/notes.md"
+          TOOL: ${{ steps.tool.outputs.dir }}
+        run: node "$TOOL/release-notes.cjs" "$BLOCK_VERSION" > "$RUNNER_TEMP/notes.md"
       - name: cut the GH release from the tag (idempotent)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -174,5 +189,9 @@ jobs:
           ALLOW="web/,docs/,tests/,labs/,packs/,templates/,.github/"
           # --exports only when the package declares an exports map (this
           # shell has none; a library adopter does).
-          node lib/verify-release.cjs --npm --version "$V" --allow "$ALLOW"
-          node lib/verify-release.cjs --gh --tag "v$V"
+          # The tool scripts resolve from lib/ (the rig) or the installed
+          # package (an adopter) - the same lookup the release job uses.
+          TOOL="lib"
+          [ -f "lib/verify-release.cjs" ] || TOOL="node_modules/coreforge/lib"
+          node "$TOOL/verify-release.cjs" --npm --version "$V" --allow "$ALLOW"
+          node "$TOOL/verify-release.cjs" --gh --tag "v$V"

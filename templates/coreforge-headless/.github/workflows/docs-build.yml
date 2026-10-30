@@ -1,0 +1,167 @@
+name: Docs build (reusable)
+
+# The docs lane, promoted to a reusable workflow (issue #9). The runbook it
+# encodes had been hand-copied three times across the rig and the copies
+# had already drifted apart - Ruby 3.2
+# vs 3.4, upload-pages-artifact v3 vs v5, a pagefind scrape vs an npm pin.
+# One copy lives here; each project keeps a thin caller that sets its own
+# inputs instead of a fourth drifted copy.
+#
+# The two receipts this lane keeps for you ride along unchanged:
+#   - the hardened pagefind release scrape: unauthenticated api.github.com
+#     calls get rate-limited from shared runner IPs, an empty VERSION yields
+#     a malformed asset URL, and tar then fails on the 404 HTML body - so an
+#     unparseable tag refuses loudly instead of downloading garbage.
+#   - the PINNED freestruct install: a floating github:-install is a random
+#     deploy (freestruct reorganized docs/lib mid-day once - PINNED, the
+#     all-caps lesson is the point). Pin rides npm semver since 1.1.0.
+#
+# Caller contract: the calling workflow owns `permissions:` (contents: read
+# for this half; pages: write + id-token: write for the deploy half),
+# `concurrency`, and the deploy job. This workflow only BUILDS the site and
+# uploads the Pages artifact; the caller's deploy job consumes it.
+#
+# Boundary: freestruct discovers its config at `docs/freestruct.config.yml`
+# relative to the repo root, so the non-default `docs-path` input moves the
+# Jekyll build + upload only. Every family repo uses `docs/`, the default.
+
+on:
+  workflow_call:
+    inputs:
+      docs-path:
+        description: Path (from the repo root) to the Jekyll docs tree.
+        type: string
+        required: false
+        default: docs
+      ruby-version:
+        description: Ruby version for the Jekyll build.
+        type: string
+        required: false
+        default: '3.2'
+      node-version:
+        description: Node version for the freestruct post-build layer.
+        type: string
+        required: false
+        default: '22'
+      pagefind-version:
+        description: Pagefind version to install, or "latest" to resolve the newest release.
+        type: string
+        required: false
+        default: latest
+      freestruct-version:
+        description: freestruct semver range for the pinned install.
+        type: string
+        required: false
+        default: ^1.1.0
+      strict:
+        description: Run the freestruct post-build layer in --strict (broken internal links fail the build). The family default is true.
+        type: boolean
+        required: false
+        default: true
+    outputs:
+      pagefind-version:
+        description: The pagefind version that was installed.
+        value: ${{ jobs.build.outputs.pagefind-version }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      pagefind-version: ${{ steps.pagefind.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v5
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      # The node-only gate chain (frontmatter, links, style, fiction
+      # signatures, the Liquid trap, theme parity) runs BEFORE Jekyll so a
+      # source bug is named at cause in lint:docs output, not surfaced as a
+      # Jekyll stack trace after a full Ruby boot. Arm-gated: a repo with no
+      # lint:docs script skips (vacuous green, never false-red).
+      - name: Install (root) + docs gates
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['lint:docs']?0:1)"; then
+            if [ -f package-lock.json ]; then npm ci --no-fund --no-audit; fi
+            npm run lint:docs
+          else
+            echo "no lint:docs script - skipping the docs gates"
+          fi
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+        with:
+          ruby-version: ${{ inputs.ruby-version }}
+          bundler-cache: true
+          working-directory: './${{ inputs.docs-path }}'
+
+      - name: Build Jekyll
+        run: |
+          cd "${{ inputs.docs-path }}"
+          bundle exec jekyll build
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+
+      # Pagefind search index (the layout's modal imports the index, so it
+      # MUST be built into _site or search reports unavailable). "latest"
+      # scrapes the newest release; any other value is installed verbatim -
+      # the npm-pin shape the drifted copies wanted.
+      - name: Download Pagefind
+        id: pagefind
+        working-directory: ${{ inputs.docs-path }}
+        env:
+          PIN: ${{ inputs.pagefind-version }}
+        run: |
+          if [ "$PIN" = "latest" ]; then
+            VERSION=$(curl -sL \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/Pagefind/pagefind/releases/latest" \
+              | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+          else
+            VERSION="$PIN"
+          fi
+          case "$VERSION" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::Could not resolve a pagefind version (got '$VERSION') - likely an API failure."; exit 1 ;;
+          esac
+          echo "pagefind version: v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          curl -sL --retry 3 --retry-delay 5 \
+            "https://github.com/pagefind/pagefind/releases/download/v${VERSION}/pagefind-v${VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            -o pagefind.tar.gz
+          tar -xzf pagefind.tar.gz
+          rm pagefind.tar.gz
+          chmod +x pagefind
+
+      - name: Create search index
+        working-directory: ${{ inputs.docs-path }}
+        run: ./pagefind --site _site
+
+      # freestruct consumes, relative to the REPO ROOT:
+      #   docs/freestruct.config.yml (config) / docs/_freestruct/
+      #   inject-brand.html (template) / docs/_site (output default)
+      # Invoke the engine directly with node (bin/freestruct.mjs forwards to
+      # the same runInject(); node skips any exec-bit / shebang questions).
+      # --strict (default): the report-only classes (broken internal links,
+      # dangerous tags) become build failures - the eyestruct post-1.0.0
+      # contract. A caller can pass strict: false to keep the tolerant pass.
+      - name: Install freestruct
+        run: npm install --no-save --no-audit --no-fund "freestruct@${{ inputs.freestruct-version }}"
+
+      - name: Run freestruct post-build layer
+        run: |
+          STRICT=""
+          if [ "${{ inputs.strict }}" = "true" ]; then STRICT="--strict"; fi
+          node node_modules/freestruct/engine/inject.js $STRICT
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: './${{ inputs.docs-path }}/_site'
