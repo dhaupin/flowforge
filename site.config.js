@@ -57,7 +57,7 @@ export default {
     themeKey: 'site-theme',
     schemeKey: 'site-paint-scheme',
     defaultMode: 'dark',
-    defaultScheme: 'iris',
+    defaultScheme: 'petrol',
   },
 
   // --- nav vocabulary -----------------------------------------------------

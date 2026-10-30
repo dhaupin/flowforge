@@ -12,7 +12,7 @@ import { useEffect } from 'react'
 import { THEME_KEY, paperFor } from '../theme.js'
 
 function currentScheme() {
-  return document.documentElement.dataset.scheme || 'iris'
+  return document.documentElement.dataset.scheme || 'petrol'
 }
 
 function setThemeColor(light) {

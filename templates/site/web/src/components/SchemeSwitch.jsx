@@ -14,12 +14,12 @@ import { useEffect, useState } from 'react'
 import { SCHEMES, SCHEME_KEY, paperFor } from '../theme.js'
 
 function currentScheme() {
-  return document.documentElement.dataset.scheme || 'iris'
+  return document.documentElement.dataset.scheme || 'petrol'
 }
 
 function applyScheme(name) {
   const el = document.documentElement
-  if (name === 'iris') delete el.dataset.scheme
+  if (name === 'petrol') delete el.dataset.scheme
   else el.dataset.scheme = name
   try { localStorage.setItem(SCHEME_KEY, name) } catch { /* private mode */ }
   // theme-color follows the scheme's paper in the current theme.
@@ -28,7 +28,7 @@ function applyScheme(name) {
 }
 
 export default function SchemeSwitch() {
-  const [scheme, setScheme] = useState('iris')
+  const [scheme, setScheme] = useState('petrol')
 
   useEffect(() => { setScheme(currentScheme()) }, [])
 

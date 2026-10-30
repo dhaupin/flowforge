@@ -54,20 +54,20 @@ test('passes on the live repo tree', () => {
 })
 
 test('passes when every scheme has both halves in both surfaces', () => {
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: GOOD('jade'), docs: GOOD('jade') })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: GOOD('jade'), docs: GOOD('jade') })
   const r = runGate(gate)
   assert.equal(r.code, 0, r.out)
 })
 
 test('fails when a scheme is missing from one surface', () => {
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: GOOD('jade'), docs: '' })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: GOOD('jade'), docs: '' })
   const r = runGate(gate)
   assert.equal(r.code, 1)
   assert.match(r.out, /jade.*no \[data-scheme="jade"\] block/)
 })
 
 test('fails when the light half is missing (the missing-accent bug)', () => {
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: DARK('jade'), docs: DARK('jade') })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: DARK('jade'), docs: DARK('jade') })
   const r = runGate(gate)
   assert.equal(r.code, 1)
   assert.match(r.out, /jade.*no \[data-scheme="jade"\]\[data-theme="light"\] half/)
@@ -75,14 +75,14 @@ test('fails when the light half is missing (the missing-accent bug)', () => {
 
 test('fails when a half omits --accent-deep', () => {
   const noDeep = `html[data-scheme="jade"] { --accent: #111; }\n${LIGHT('jade')}`
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: noDeep, docs: noDeep })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: noDeep, docs: noDeep })
   const r = runGate(gate)
   assert.equal(r.code, 1)
   assert.match(r.out, /jade.*dark half does not set --accent-deep/)
 })
 
 test('fails on an orphan scheme block the picker does not offer', () => {
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: GOOD('jade') + DARK('bogus'), docs: GOOD('jade') })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: GOOD('jade') + DARK('bogus'), docs: GOOD('jade') })
   const r = runGate(gate)
   assert.equal(r.code, 1)
   assert.match(r.out, /"bogus".*orphan/)
@@ -90,7 +90,7 @@ test('fails on an orphan scheme block the picker does not offer', () => {
 
 test('ignores scheme names inside CSS comments', () => {
   const withComment = `/* see [data-scheme="ghost"] for history */\n${GOOD('jade')}`
-  const gate = fixture({ schemes: ['iris', 'jade'], styles: withComment, docs: GOOD('jade') })
+  const gate = fixture({ schemes: ['petrol', 'jade'], styles: withComment, docs: GOOD('jade') })
   const r = runGate(gate)
   assert.equal(r.code, 0, r.out)
 })
